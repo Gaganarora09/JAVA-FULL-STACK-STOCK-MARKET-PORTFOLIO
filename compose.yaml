@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: portfolio_pro
+      MYSQL_USER: ${DB_USERNAME:-portfolio_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_local_only}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - portfolio_pro_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./portfoliopro-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      DB_URL: jdbc:mysql://mysql:3306/portfolio_pro?serverTimezone=UTC
+      DB_USERNAME: ${DB_USERNAME:-portfolio_app}
+      DB_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
+      PORTFOLIOPRO_JWT_SECRET: ${PORTFOLIOPRO_JWT_SECRET:-PortfolioPro-Local-Docker-Secret-Change-Before-Use}
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./portfolio-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4200:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  portfolio_pro_mysql:

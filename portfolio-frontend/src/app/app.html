@@ -1,0 +1,205 @@
+@if (!authenticated()) {
+  <main class="auth-shell">
+    <section class="auth-story">
+      <a class="brand" href="#" aria-label="PortfolioPro home"><span class="brand-mark">P</span> portfolio<span>pro</span></a>
+      <div class="story-copy">
+        <span class="eyebrow">YOUR MONEY, IN FOCUS</span>
+        <h1>Make your next move with <em>confidence.</em></h1>
+        <p>A clear view of your portfolio, your watchlist, and every simulated trade in one place.</p>
+        <div class="story-chart" aria-label="Illustrative portfolio trend chart">
+          <div class="chart-tooltip"><span>Portfolio value</span><strong>$108,240.00</strong><small>Illustrative demo graphic</small></div>
+          <svg viewBox="0 0 540 150" role="img" aria-label="Decorative rising line chart">
+            <defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#a9dbc7" stop-opacity=".42"/><stop offset="1" stop-color="#a9dbc7" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 120 C40 110 45 95 82 101 S130 110 161 84 S210 94 244 72 S296 91 332 58 S379 75 412 48 S462 60 493 26 S522 42 540 13 V150 H0Z" fill="url(#fill)"/>
+            <path d="M0 120 C40 110 45 95 82 101 S130 110 161 84 S210 94 244 72 S296 91 332 58 S379 75 412 48 S462 60 493 26 S522 42 540 13" fill="none" stroke="#9bcdb8" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="chart-months"><span>JAN</span><span>MAR</span><span>MAY</span><span>JUL</span><span>SEP</span><span>DEC</span></div>
+        </div>
+        <div class="trust-note"><span class="pulse-dot"></span> Practice with simulated trades. No real money involved.</div>
+      </div>
+      <span class="auth-footer">© 2026 PortfolioPro · Educational portfolio management</span>
+    </section>
+
+    <section class="auth-panel">
+      <div class="mobile-brand"><a class="brand" href="#"><span class="brand-mark">P</span> portfolio<span>pro</span></a></div>
+      <div class="auth-form-wrap">
+        <span class="eyebrow">{{ registering() ? 'GET STARTED' : 'WELCOME BACK' }}</span>
+        <h2>{{ registering() ? 'Create your account' : 'Sign in to your portfolio' }}</h2>
+        <p class="subtle">{{ registering() ? 'Build your investing habits in a safe, simulated environment.' : 'Your portfolio is ready when you are.' }}</p>
+
+        @if (error()) { <div class="alert error" role="alert">{{ error() }}</div> }
+
+        <form (ngSubmit)="submitAuth()">
+          <label for="username">Username</label>
+          <input id="username" name="username" [(ngModel)]="username" required minlength="3" autocomplete="username" placeholder="e.g. alexmorgan" />
+
+          @if (registering()) {
+            <label for="email">Email address</label>
+            <input id="email" name="email" [(ngModel)]="email" required type="email" autocomplete="email" placeholder="you@example.com" />
+          }
+
+          <label for="password">Password</label>
+          <input id="password" name="password" [(ngModel)]="password" required [minlength]="registering() ? 8 : 1" type="password" autocomplete="{{ registering() ? 'new-password' : 'current-password' }}" placeholder="{{ registering() ? 'At least 8 characters' : 'Enter your password' }}" />
+
+          <button class="button primary auth-submit" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Please wait…' : registering() ? 'Create account' : 'Sign in' }} <span aria-hidden="true">→</span>
+          </button>
+        </form>
+        <p class="switch-auth">{{ registering() ? 'Already have an account?' : 'New to PortfolioPro?' }} <button type="button" (click)="toggleAuthMode()">{{ registering() ? 'Sign in' : 'Create an account' }}</button></p>
+        <div class="demo-callout"><span class="info-icon">i</span><span>Prices shown in this app are seeded demo values. They are not live market data.</span></div>
+      </div>
+    </section>
+  </main>
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark">P</span> portfolio<span>pro</span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="#overview"><span class="nav-icon">◫</span> Overview</a>
+        <a class="nav-link" href="#holdings"><span class="nav-icon">◉</span> Holdings</a>
+        <a class="nav-link" href="#watchlist"><span class="nav-icon">☆</span> Watchlist</a>
+        <a class="nav-link" href="#activity"><span class="nav-icon">↗</span> Activity</a>
+      </nav>
+      <a class="nav-link performance-nav-link" href="#performance"><span class="nav-icon">↗</span> Performance</a>
+      <div class="sidebar-bottom">
+        <div class="education-card"><span class="education-icon">✳</span><strong>Practice safely</strong><p>All trades are simulated. No real money changes hands.</p></div>
+        <button class="profile-button" type="button" (click)="logout()"><span class="avatar">{{ username.charAt(0).toUpperCase() || 'U' }}</span><span class="profile-copy"><strong>{{ username || 'Investor' }}</strong><small>Personal account</small></span><span class="logout-icon">↪</span></button>
+      </div>
+    </aside>
+
+    <main class="dashboard" id="overview">
+      <header class="topbar">
+        <div><div class="breadcrumbs">Portfolio <span>/</span> Overview</div><h1>Good day, {{ username || 'Investor' }} <span class="wave">✦</span></h1></div>
+        <div class="top-actions"><span class="demo-pill"><span></span> SIMULATED DATA</span><button class="icon-button" type="button" aria-label="Refresh dashboard" (click)="refresh()" [disabled]="busy()">⟳</button><button class="mobile-logout" type="button" (click)="logout()">Log out</button></div>
+      </header>
+
+      @if (error()) { <div class="alert error" role="alert">{{ error() }}</div> }
+      @if (notice()) { <div class="alert success" role="status">{{ notice() }}</div> }
+
+      <section class="overview-grid">
+        <article class="card balance-card">
+          <div class="card-heading"><span class="eyebrow">TOTAL PORTFOLIO VALUE</span><span class="live-tag"><i></i> UPDATED JUST NOW</span></div>
+          <div class="balance-value">{{ money(summary()?.totalAccountValue) }}</div>
+          <div class="balance-meta"><span class="gain-chip" [class.negative]="(analytics()?.totalGainLoss ?? 0) < 0">{{ (analytics()?.totalGainLoss ?? 0) >= 0 ? '↗' : '↘' }} {{ money(analytics()?.totalGainLoss) }} total P/L</span><span class="value-caption">Cash + investments</span></div>
+          <div class="balance-divider"></div>
+          <div class="mini-metrics"><div><span>Cash available</span><strong>{{ money(summary()?.cashBalance) }}</strong></div><div><span>Invested value</span><strong>{{ money(summary()?.totalMarketValue) }}</strong></div><div><span>Unrealized P/L</span><strong [class.positive-text]="(summary()?.totalUnrealizedGainLoss ?? 0) >= 0">{{ money(summary()?.totalUnrealizedGainLoss) }}</strong></div></div>
+        </article>
+
+        <article class="card allocation-card">
+          <div class="section-heading"><div><span class="eyebrow">PORTFOLIO MIX</span><h2>Allocation</h2></div><span class="more-icon">•••</span></div>
+          <div class="allocation-content"><div class="donut" [style.background]="allocationStyle()"><div class="donut-center"><strong>{{ analytics()?.holdings?.length ?? 0 }}</strong><span>positions</span></div></div>
+            <div class="legend"><div class="legend-row"><span class="legend-dot cash-dot"></span><span>Cash</span><strong>{{ analytics()?.cashAllocationPercent ?? 0 }}%</strong></div>
+              @for (sector of analytics()?.sectors ?? []; track sector.sector; let index = $index) {
+                <div class="legend-row"><span class="legend-dot" [class]="'sector-dot dot-' + (index % 6)"></span><span>{{ sector.sector }}</span><strong>{{ sector.allocationPercent }}%</strong></div>
+              }
+              @if (!(analytics()?.sectors?.length)) { <p class="empty-small">Your stock allocation will appear after your first trade.</p> }
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="market-analysis-grid">
+        <article class="card market-fundamentals">
+          <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2></div><span class="trade-note">Demo values</span></div>
+          <div class="fundamental-metrics">
+            <div><span>EPS</span><strong>{{ fundamentals()?.earningsPerShare == null ? '—' : money(fundamentals()?.earningsPerShare) }}</strong></div>
+            <div><span>P / E</span><strong>{{ fundamentals()?.priceToEarnings ?? '—' }}</strong></div>
+            <div><span>Market cap</span><strong>{{ compactMoney(fundamentals()?.marketCapitalization) }}</strong></div>
+            <div><span>Dividend yield</span><strong>{{ fundamentals()?.dividendYield == null ? '—' : (fundamentals()!.dividendYield! * 100 | number:'1.2-2') + '%' }}</strong></div>
+          </div>
+        </article>
+        <article class="card market-technical">
+          <div class="section-heading"><div><span class="eyebrow">SIMULATED TECHNICALS</span><h2>{{ technicalAnalysis()?.ticker ?? ticker }} indicators</h2></div><span class="trade-note">30 demo closes</span></div>
+          <div class="technical-metrics">
+            <div><span>Last close</span><strong>{{ money(technicalAnalysis()?.latestClose) }}</strong></div>
+            <div><span>SMA 20</span><strong>{{ technicalAnalysis()?.sma20 == null ? '—' : money(technicalAnalysis()?.sma20) }}</strong></div>
+            <div><span>RSI 14</span><strong>{{ technicalAnalysis()?.rsi14 ?? '—' }}</strong></div>
+          </div>
+          <p class="risk-caption">Generated sample data for API demonstration; not a market signal.</p>
+        </article>
+      </section>
+
+      <section class="performance-grid" id="performance">
+        <article class="card performance-card">
+          <div class="section-heading performance-heading">
+            <div><span class="eyebrow">ACCOUNT HISTORY</span><h2>Portfolio performance</h2>@if (illustrativePerformance()) { <span class="illustrative-tag">ILLUSTRATIVE EXAMPLE</span> }</div>
+            <div class="range-buttons" aria-label="Performance time range">
+              <button type="button" [class.selected]="performanceRange() === 'week'" (click)="setPerformanceRange('week')">1W</button>
+              <button type="button" [class.selected]="performanceRange() === 'month'" (click)="setPerformanceRange('month')">1M</button>
+              <button type="button" [class.selected]="performanceRange() === 'year'" (click)="setPerformanceRange('year')">1Y</button>
+              <button type="button" [class.selected]="performanceRange() === 'all'" (click)="setPerformanceRange('all')">ALL</button>
+            </div>
+          </div>
+          @if (performance().length) {
+            <div class="performance-chart">
+              <svg viewBox="0 0 400 92" role="img" aria-label="Portfolio value chart">
+                <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" />
+                <line x1="8" y1="46" x2="392" y2="46" class="chart-axis" />
+                <line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
+                <polyline [attr.points]="performanceLine()" class="performance-line" [class.negative-trend]="performanceChange() < 0 && illustrativePerformance()" />
+              </svg>
+              <div class="performance-summary" [class.negative-text]="performanceChange() < 0"><strong>{{ performanceChange() >= 0 ? '+' : '' }}{{ money(performanceAmountChange()) }}</strong><span>{{ performanceChange() | number:'1.2-2' }}% over selected period</span></div>
+              <div class="performance-endpoints"><span>{{ performance()[0].date | date:'MMM d, y' }}</span><strong>{{ money(performance()[performance().length - 1].totalValue) }}</strong><span>{{ performance()[performance().length - 1].date | date:'MMM d, y' }}</span></div>
+              @if (illustrativePerformance()) { <p class="single-snapshot-note">Illustrative curve only, anchored to your current balance. It is not actual past account performance.</p> }
+            </div>
+          } @else {
+            <div class="performance-empty">No snapshots for this range yet. Daily history builds while your account is active.</div>
+          }
+        </article>
+        <article class="card risk-card">
+          <div><span class="eyebrow">RISK INDICATORS</span><h2>Portfolio risk</h2></div>
+          <div class="risk-metrics">
+            <div><span>Largest position</span><strong>{{ analytics()?.topHoldingConcentrationPercent ?? 0 }}%</strong><small>{{ analytics()?.concentrationRiskEstimate ?? 'LOW' }} concentration</small></div>
+            <div><span>Daily volatility</span><strong>{{ analytics()?.dailyVolatilityPercent == null ? '—' : analytics()?.dailyVolatilityPercent + '%' }}</strong><small>Unannualized</small></div>
+            <div><span>Max drawdown</span><strong>{{ analytics()?.maxDrawdownPercent == null ? '—' : analytics()?.maxDrawdownPercent + '%' }}</strong><small>Recorded history</small></div>
+          </div>
+          <p class="risk-caption">{{ analytics()?.riskMetricsStatus === 'INSUFFICIENT_HISTORY' ? 'More daily snapshots are needed for volatility and drawdown.' : 'Calculated from simulated daily snapshots; these are not forecasts.' }}</p>
+        </article>
+      </section>
+
+      <section class="card trade-card">
+        <div class="section-heading"><div><span class="eyebrow">SIMULATED TRADING</span><h2>Make a trade</h2></div><span class="trade-note">No real money involved</span></div>
+        <div class="trade-form">
+          <label>Stock<select name="ticker" [(ngModel)]="ticker" (ngModelChange)="loadStockAnalysis($event)"><option value="" disabled>Select a stock</option>@for (stock of stocks(); track stock.ticker) { <option [value]="stock.ticker">{{ stock.ticker }} · {{ stock.companyName }}</option> }</select></label>
+          <label>Quantity<input name="quantity" [(ngModel)]="quantity" type="number" min="1" step="1" /></label>
+          <div class="trade-price"><span>Demo price</span><strong>{{ money(stocks().find(s => s.ticker === ticker)?.simulatedPrice) }}</strong></div>
+          <div class="trade-buttons"><button class="button buy-button" type="button" (click)="placeTrade('BUY')" [disabled]="busy() || !ticker || quantity < 1">Buy</button><button class="button sell-button" type="button" (click)="placeTrade('SELL')" [disabled]="busy() || !ticker || quantity < 1">Sell</button></div>
+        </div>
+      </section>
+
+      <section class="content-grid">
+        <article class="card holdings-card" id="holdings">
+          <div class="section-heading"><div><span class="eyebrow">YOUR POSITIONS</span><h2>Holdings <span class="count-badge">{{ summary()?.holdings?.length ?? 0 }}</span></h2></div><a href="#holdings" class="text-link">View all <span>→</span></a></div>
+          @if (summary()?.holdings?.length) {
+            <div class="table-scroll"><table><thead><tr><th>ASSET</th><th>SHARES</th><th>PRICE</th><th>VALUE</th><th>UNREALIZED P/L</th></tr></thead><tbody>
+              @for (holding of summary()?.holdings ?? []; track holding.ticker) { <tr><td><span class="asset-mark">{{ holding.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ holding.ticker }}</strong><small>{{ holding.companyName }}</small></span></td><td>{{ holding.quantity }}</td><td>{{ money(holding.currentPrice) }}</td><td class="value-cell">{{ money(holding.marketValue) }}</td><td [class.positive-text]="holding.unrealizedGainLoss >= 0" [class.negative-text]="holding.unrealizedGainLoss < 0">{{ holding.unrealizedGainLoss >= 0 ? '+' : '' }}{{ money(holding.unrealizedGainLoss) }}</td></tr> }
+            </tbody></table></div>
+          } @else { <div class="empty-state"><span class="empty-symbol">◉</span><strong>No holdings yet</strong><p>Use the simulated trade ticket above to make your first investment.</p></div> }
+        </article>
+
+        <article class="card watch-card" id="watchlist">
+          <div class="section-heading"><div><span class="eyebrow">KEEP AN EYE ON</span><h2>Watchlist</h2></div><span class="count-badge">{{ watchlist().length }}</span></div>
+          <div class="watch-items">
+            @for (item of watchlist(); track item.ticker) { <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></span><strong class="watch-price">{{ money(item.simulatedPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div> }
+            @if (!watchlist().length) { <div class="empty-state compact"><span class="empty-symbol">☆</span><strong>Your watchlist is empty</strong><p>Add a stock from the catalogue.</p></div> }
+          </div>
+          <div class="catalogue"><div class="catalogue-title"><strong>Stock catalogue</strong><small>Seeded demo prices</small></div>
+            <input class="catalogue-search" type="search" placeholder="Search ticker or company" [value]="stockQuery" (input)="searchCatalogue($any($event.target).value)" />
+            @for (stock of catalogueStocks(); track stock.ticker) { <div class="catalogue-row"><span><strong>{{ stock.ticker }}</strong><small>{{ stock.companyName }}</small></span><strong>{{ money(stock.simulatedPrice) }}</strong><button type="button" class="add-watch" (click)="addToWatchlist(stock)" [disabled]="watchlist().some(item => item.ticker === stock.ticker)" [attr.aria-label]="'Add ' + stock.ticker + ' to watchlist'">{{ watchlist().some(item => item.ticker === stock.ticker) ? '✓' : '+' }}</button></div> }
+            @if (!catalogueStocks().length) { <p class="empty-small">No stocks match that search.</p> }
+          </div>
+        </article>
+      </section>
+
+      <section class="card activity-card" id="activity">
+        <div class="section-heading"><div><span class="eyebrow">RECENT ORDERS</span><h2>Trade activity</h2></div><span class="activity-count">{{ trades().length }} trades</span></div>
+        @if (trades().length) { <div class="table-scroll"><table><thead><tr><th>ASSET</th><th>TYPE</th><th>SHARES</th><th>PRICE</th><th>REALIZED P/L</th><th>DATE</th></tr></thead><tbody>
+          @for (trade of trades().slice(0, 6); track trade.id) { <tr><td><span class="asset-name"><strong>{{ trade.ticker }}</strong><small>{{ trade.companyName }}</small></span></td><td><span class="trade-type" [class.sell-type]="trade.type === 'SELL'">{{ trade.type }}</span></td><td>{{ trade.quantity }}</td><td>{{ money(trade.priceAtExecution) }}</td><td [class.positive-text]="trade.realizedGainLoss >= 0" [class.negative-text]="trade.realizedGainLoss < 0">{{ money(trade.realizedGainLoss) }}</td><td>{{ trade.executedAt | date:'MMM d, y' }}</td></tr> }
+        </tbody></table></div> } @else { <div class="empty-state compact"><span class="empty-symbol">↗</span><strong>No activity yet</strong><p>Your simulated buy and sell orders will show up here.</p></div> }
+      </section>
+
+      <footer class="dashboard-footer"><span>PortfolioPro is an educational simulator. Stock prices are seeded demo values, not live market data.</span><span>Concentration metric is an estimate, not a prediction.</span></footer>
+    </main>
+  </div>
+}

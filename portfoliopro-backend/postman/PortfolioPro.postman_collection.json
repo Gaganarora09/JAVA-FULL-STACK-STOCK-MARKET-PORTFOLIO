@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "PortfolioPro Simulated Trading API",
+    "description": "Repeatable API checks for the educational simulator. Stock prices are seeded demo values; orders do not connect to a real brokerage.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Backend health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/health" }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register fresh test user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.environment.set('username', `portfolio_${stamp}`);",
+                  "pm.environment.set('email', `portfolio_${stamp}@example.test`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('registration succeeds', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('authToken', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('login succeeds', () => pm.response.to.have.status(200));",
+                "pm.environment.set('authToken', pm.response.json().token);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stocks",
+      "item": [
+        {
+          "name": "Search demo stocks",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks/search?q={{stockQuery}}" }
+        },
+        {
+          "name": "List sectors",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks/sectors" }
+        },
+        {
+          "name": "List seeded demo stocks",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks" }
+        },
+        {
+          "name": "Get one demo stock",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks/{{ticker}}" }
+        },
+        {
+          "name": "Get simulated demo fundamentals",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks/{{ticker}}/fundamentals" }
+        },
+        {
+          "name": "Get simulated technical analysis",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/stocks/{{ticker}}/technical-analysis?days=30" }
+        }
+      ]
+    },
+    {
+      "name": "Portfolio",
+      "item": [
+        {
+          "name": "My profile and available cash",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "My portfolio summary",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/portfolio/me"
+          }
+        },
+        {
+          "name": "My allocation and P/L analytics",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/portfolio/analytics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Watchlist",
+      "item": [
+        {
+          "name": "Add ticker",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/watchlist/{{ticker}}"
+          }
+        },
+        {
+          "name": "My daily performance history",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/portfolio/performance?range=month"
+          }
+        },
+        {
+          "name": "List my watchlist",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/watchlist"
+          }
+        },
+        {
+          "name": "Remove ticker",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/watchlist/{{ticker}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Simulated trading",
+      "item": [
+        {
+          "name": "Buy shares",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"{{ticker}}\",\n  \"type\": \"BUY\",\n  \"quantity\": {{quantity}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/trades"
+          }
+        },
+        {
+          "name": "Sell shares",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticker\": \"{{ticker}}\",\n  \"type\": \"SELL\",\n  \"quantity\": {{quantity}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/api/trades"
+          }
+        },
+        {
+          "name": "My trade history",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/trades"
+          }
+        }
+      ]
+    }
+  ]
+}

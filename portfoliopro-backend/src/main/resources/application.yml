@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+app:
+  jwt:
+    # Development-only fallback. Set PORTFOLIOPRO_JWT_SECRET to a long random value outside local development.
+    secret: ${PORTFOLIOPRO_JWT_SECRET:PortfolioPro-Local-Development-Secret-Key-Change-Me}
+    expiration-ms: 3600000
+
+spring:
+  application:
+    name: portfoliopro-backend
+
+  datasource:
+    url: jdbc:h2:mem:portfoliopro;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.portfoliopro: DEBUG

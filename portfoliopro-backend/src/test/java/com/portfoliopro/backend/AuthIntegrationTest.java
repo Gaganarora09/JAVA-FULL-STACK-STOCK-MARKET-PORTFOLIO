@@ -1,0 +1,227 @@
+package com.portfoliopro.backend;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.portfoliopro.backend.entity.User;
+import com.portfoliopro.backend.repository.PortfolioRepository;
+import com.portfoliopro.backend.repository.HoldingRepository;
+import com.portfoliopro.backend.repository.TradeRepository;
+import com.portfoliopro.backend.repository.WatchlistRepository;
+import com.portfoliopro.backend.repository.UserRepository;
+import com.portfoliopro.backend.repository.StockRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class AuthIntegrationTest {
+    @Autowired MockMvc mvc;
+    @Autowired ObjectMapper objectMapper;
+    @Autowired UserRepository userRepository;
+    @Autowired PortfolioRepository portfolioRepository;
+    @Autowired HoldingRepository holdingRepository;
+    @Autowired TradeRepository tradeRepository;
+    @Autowired WatchlistRepository watchlistRepository;
+    @Autowired StockRepository stockRepository;
+
+    @BeforeEach
+    void cleanUsers() {
+        watchlistRepository.deleteAll();
+        tradeRepository.deleteAll();
+        portfolioRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void registrationHashesPasswordCreatesPortfolioAndTokenProtectsPortfolio() throws Exception {
+        String response = mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"alice","email":"alice@example.com","password":"correct-horse-1"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        JsonNode auth = objectMapper.readTree(response);
+        assertThat(auth.get("tokenType").asText()).isEqualTo("Bearer");
+        User user = userRepository.findByUsername("alice").orElseThrow();
+        assertThat(user.getPasswordHash()).isNotEqualTo("correct-horse-1");
+        assertThat(user.getPasswordHash()).startsWith("$2a$");
+        assertThat(portfolioRepository.findByUserId(user.getId())).isPresent();
+
+        mvc.perform(get("/api/portfolio/me"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/portfolio/me")
+                        .header("Authorization", "Bearer " + auth.get("token").asText()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void loginRejectsWrongPasswordAndUserSpecificRoutesRequireAuthentication() throws Exception {
+        mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"bob","email":"bob@example.com","password":"correct-horse-1"}
+                                """))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"bob","password":"wrong-password"}
+                                """))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/trades"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/stocks"))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/stocks/AAPL"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceType").value("SIMULATED_DEMO"));
+    }
+
+    @Test
+    void tradesAreScopedToTokenOwnerAndResponsesDoNotExposeUserCredentials() throws Exception {
+        String firstToken = registerAndGetToken("trader-one", "trader1@example.com");
+        String secondToken = registerAndGetToken("trader-two", "trader2@example.com");
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + firstToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"AAPL","type":"BUY","quantity":1}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ticker").value("AAPL"))
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+
+        mvc.perform(get("/api/trades").header("Authorization", "Bearer " + secondToken))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().json("[]"));
+        mvc.perform(get("/api/trades").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ticker").value("AAPL"));
+        mvc.perform(get("/api/portfolio/me").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.holdings[0].ticker").value("AAPL"))
+                .andExpect(jsonPath("$.totalUnrealizedGainLoss").value(0));
+    }
+
+    @Test
+    void watchlistIsUserScopedAndAddingSameTickerTwiceDoesNotDuplicateIt() throws Exception {
+        String firstToken = registerAndGetToken("watch-one", "watch1@example.com");
+        String secondToken = registerAndGetToken("watch-two", "watch2@example.com");
+
+        mvc.perform(post("/api/watchlist/aapl").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.ticker").value("AAPL"));
+        mvc.perform(post("/api/watchlist/AAPL").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isCreated());
+        mvc.perform(get("/api/watchlist").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/watchlist").header("Authorization", "Bearer " + secondToken))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().json("[]"));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/watchlist/AAPL").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/watchlist").header("Authorization", "Bearer " + firstToken))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().json("[]"));
+    }
+
+    @Test
+    void analyticsIncludesRealizedAndUnrealizedProfitAndAllocation() throws Exception {
+        String token = registerAndGetToken("analyst", "analyst@example.com");
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"AAPL","type":"BUY","quantity":2}
+                                """))
+                .andExpect(status().isOk());
+
+        var stock = stockRepository.findByTicker("AAPL").orElseThrow();
+        stock.setCurrentPrice(new java.math.BigDecimal("260.50"));
+        stockRepository.save(stock);
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"AAPL","type":"SELL","quantity":1}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realizedGainLoss").value(15.00));
+
+        mvc.perform(get("/api/portfolio/analytics").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realizedGainLoss").value(15.00))
+                .andExpect(jsonPath("$.unrealizedGainLoss").value(15.00))
+                .andExpect(jsonPath("$.totalGainLoss").value(30.00))
+                .andExpect(jsonPath("$.holdings[0].ticker").value("AAPL"))
+                .andExpect(jsonPath("$.concentrationRiskEstimate").value("HIGH"))
+                .andExpect(jsonPath("$.riskDescription").exists());
+    }
+
+    @Test
+    void rejectedTradesDoNotChangeCashHoldingsOrTradeHistory() throws Exception {
+        String token = registerAndGetToken("careful-trader", "careful@example.com");
+        User user = userRepository.findByUsername("careful-trader").orElseThrow();
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"MSFT","type":"BUY","quantity":1000000}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"AAPL","type":"SELL","quantity":1}
+                                """))
+                .andExpect(status().isUnprocessableEntity());
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"ticker":"AAPL","type":"BUY","quantity":0}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        User unchanged = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(unchanged.getCashBalance()).isEqualByComparingTo("100000.00");
+        assertThat(tradeRepository.findByUserIdOrderByExecutedAtDesc(user.getId())).isEmpty();
+        Long portfolioId = portfolioRepository.findByUserId(user.getId()).orElseThrow().getId();
+        assertThat(holdingRepository.countByPortfolioId(portfolioId)).isZero();
+    }
+
+    private String registerAndGetToken(String username, String email) throws Exception {
+        String response = mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(java.util.Map.of(
+                                "username", username,
+                                "email", email,
+                                "password", "correct-horse-1"))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(response).get("token").asText();
+    }
+}
