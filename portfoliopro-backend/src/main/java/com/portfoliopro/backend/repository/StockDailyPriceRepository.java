@@ -11,4 +11,5 @@ public interface StockDailyPriceRepository extends JpaRepository<StockDailyPrice
             Long stockId, LocalDate startDate);
     boolean existsByStockId(Long stockId);
     boolean existsByStockIdAndTradingDate(Long stockId, LocalDate tradingDate);
+    java.util.Optional<StockDailyPrice> findByStockIdAndTradingDate(Long stockId, LocalDate tradingDate);
 }

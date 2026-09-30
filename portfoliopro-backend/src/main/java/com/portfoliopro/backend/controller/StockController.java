@@ -3,6 +3,8 @@ package com.portfoliopro.backend.controller;
 import com.portfoliopro.backend.dto.StockResponse;
 import com.portfoliopro.backend.dto.StockFundamentalsResponse;
 import com.portfoliopro.backend.dto.StockTechnicalAnalysisResponse;
+import com.portfoliopro.backend.dto.StockSearchResponse;
+import com.portfoliopro.backend.service.MarketDataService;
 import com.portfoliopro.backend.repository.StockRepository;
 import com.portfoliopro.backend.service.StockAnalysisService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ public class StockController {
 
     private final StockRepository stockRepository;
     private final StockAnalysisService stockAnalysisService;
+    private final MarketDataService marketDataService;
 
     @GetMapping
     public List<StockResponse> listStocks() {
@@ -26,12 +29,24 @@ public class StockController {
     }
 
     @GetMapping("/search")
-    public List<StockResponse> searchStocks(
+    public List<StockSearchResponse> searchStocks(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String sector) {
         String query = normalize(q);
         String normalizedSector = normalize(sector);
-        return stockRepository.search(query, normalizedSector).stream().map(StockResponse::from).toList();
+        List<StockSearchResponse> results = new java.util.ArrayList<>(stockRepository.search(query, normalizedSector)
+                .stream().map(StockSearchResponse::from).toList());
+        if (query != null && normalizedSector == null && marketDataService.configured()) {
+            marketDataService.searchTickers(query).stream()
+                    .map(match -> StockSearchResponse.external(match.ticker(), match.companyName(), match.primaryExchange()))
+                    .forEach(results::add);
+        }
+        return results;
+    }
+
+    @PostMapping("/{ticker}/import")
+    public StockResponse importStock(@PathVariable String ticker) {
+        return StockResponse.from(marketDataService.importTicker(ticker));
     }
 
     @GetMapping("/sectors")

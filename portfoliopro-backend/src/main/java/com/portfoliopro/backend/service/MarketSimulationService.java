@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -22,9 +23,13 @@ public class MarketSimulationService {
     private final StockDailyPriceRepository priceRepository;
     private final PortfolioSnapshotService portfolioSnapshotService;
 
+    @Value("${app.market-data.api-key:}")
+    private String marketDataApiKey;
+
     @Scheduled(cron = "0 0 0 * * *", zone = "UTC")
     @Transactional
     public void advanceDemoMarketDay() {
+        if (marketDataApiKey != null && !marketDataApiKey.isBlank()) return;
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         for (Stock stock : stockRepository.findAll()) {
             if (priceRepository.existsByStockIdAndTradingDate(stock.getId(), today)) continue;
@@ -40,6 +45,7 @@ public class MarketSimulationService {
             point.setStock(stock);
             point.setTradingDate(today);
             point.setClosePrice(close);
+            point.setDataSource("SIMULATED_DEMO");
             priceRepository.save(point);
         }
         portfolioSnapshotService.captureAllDaily();

@@ -41,7 +41,8 @@ public class StockAnalysisService {
                 .toList();
 
         return new StockTechnicalAnalysisResponse(stock.getTicker(), points.size(), latest, sma20, rsi14,
-                "SIMULATED_DEMO", history);
+                points.stream().map(StockDailyPrice::getDataSource).filter(java.util.Objects::nonNull).distinct().count() > 1
+                        ? "MIXED_SOURCES" : points.stream().findFirst().map(StockDailyPrice::getDataSource).orElse(stock.getPriceSource()), history);
     }
 
     private BigDecimal average(List<BigDecimal> values) {

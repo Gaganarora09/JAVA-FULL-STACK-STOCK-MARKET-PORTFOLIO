@@ -4,7 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { TOKEN_KEY } from './auth.interceptor';
-import { PortfolioAnalytics, PortfolioApi, PortfolioPerformancePoint, PortfolioSummary, Stock, StockFundamentals, StockTechnicalAnalysis, Trade, UserProfile, WatchlistItem } from './portfolio-api.service';
+import { MarketDataStatus, PortfolioAnalytics, PortfolioApi, PortfolioPerformancePoint, PortfolioSummary, Stock, StockSearchResult, StockFundamentals, StockTechnicalAnalysis, Trade, UserProfile, WatchlistItem } from './portfolio-api.service';
 
 @Component({
   selector: 'app-root',
@@ -23,7 +23,7 @@ export class App implements OnInit {
   readonly summary = signal<PortfolioSummary | null>(null);
   readonly analytics = signal<PortfolioAnalytics | null>(null);
   readonly stocks = signal<Stock[]>([]);
-  readonly catalogueStocks = signal<Stock[]>([]);
+  readonly catalogueStocks = signal<StockSearchResult[]>([]);
   readonly fundamentals = signal<StockFundamentals | null>(null);
   readonly technicalAnalysis = signal<StockTechnicalAnalysis | null>(null);
   readonly trades = signal<Trade[]>([]);
@@ -32,6 +32,7 @@ export class App implements OnInit {
   readonly performance = signal<PortfolioPerformancePoint[]>([]);
   readonly performanceRange = signal<'week' | 'month' | 'year' | 'all'>('month');
   readonly illustrativePerformance = signal(false);
+  readonly marketDataStatus = signal<MarketDataStatus | null>(null);
 
   username = '';
   email = '';
@@ -40,6 +41,7 @@ export class App implements OnInit {
   quantity = 1;
   stockQuery = '';
   private catalogueRequest = 0;
+  private catalogueSearchTimeout?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
     if (sessionStorage.getItem(TOKEN_KEY)) {
@@ -101,6 +103,7 @@ export class App implements OnInit {
       stocks: this.api.stocks(),
       trades: this.api.trades(),
       watchlist: this.api.watchlist(),
+      marketDataStatus: this.api.marketDataStatus(),
     }).subscribe({
       next: (data) => {
         this.summary.set(data.summary);
@@ -109,9 +112,10 @@ export class App implements OnInit {
         this.analytics.set(data.analytics);
         this.setPerformanceData(data.performance);
         this.stocks.set(data.stocks);
-        this.catalogueStocks.set(data.stocks);
+        this.catalogueStocks.set(data.stocks.map((stock) => ({ ...stock, inCatalogue: true, primaryExchange: null })));
         this.trades.set(data.trades);
         this.watchlist.set(data.watchlist);
+        this.marketDataStatus.set(data.marketDataStatus);
         if (!this.stocks().some((stock) => stock.ticker === this.ticker)) {
           this.ticker = this.stocks()[0]?.ticker ?? '';
         }
@@ -122,12 +126,12 @@ export class App implements OnInit {
       error: (failure: HttpErrorResponse) => {
         this.error.set(this.messageFor(failure));
         this.busy.set(false);
-        if (failure.status === 401) this.logout();
+        if (failure.status === 401 || failure.status === 404) this.logout();
       },
     });
   }
 
-  addToWatchlist(stock: Stock): void {
+  addToWatchlist(stock: StockSearchResult): void {
     this.api.addWatchlist(stock.ticker).subscribe({
       next: () => {
         this.notice.set(`${stock.ticker} added to your watchlist.`);
@@ -135,6 +139,64 @@ export class App implements OnInit {
       },
       error: (failure) => this.error.set(this.messageFor(failure)),
     });
+  }
+
+  importStock(stock: StockSearchResult): void {
+    this.busy.set(true);
+    this.api.importStock(stock.ticker).subscribe({
+      next: (added) => {
+        this.ticker = added.ticker;
+        this.notice.set(`${added.ticker} added with Massive end-of-day prices.`);
+        this.busy.set(false);
+        this.refresh();
+        if (this.stockQuery.trim()) this.searchCatalogue(this.stockQuery);
+      },
+      error: (failure) => {
+        this.error.set(this.messageFor(failure));
+        this.busy.set(false);
+      },
+    });
+  }
+
+  refreshMarketData(): void {
+    if (!this.marketDataStatus()?.configured) {
+      this.notice.set('Add MASSIVE_API_KEY to the backend .env file to enable real end-of-day market prices.');
+      return;
+    }
+    this.busy.set(true);
+    this.api.refreshMarketData().subscribe({
+      next: (result) => {
+        this.notice.set(`Market data updated for ${result.updatedStocks} stocks${result.failedStocks ? `; ${result.failedStocks} failed` : ''}.`);
+        this.refresh();
+      },
+      error: (failure) => {
+        this.error.set(this.messageFor(failure));
+        this.busy.set(false);
+      },
+    });
+  }
+
+  addPracticeFunds(): void {
+    this.busy.set(true);
+    this.api.addPracticeFunds().subscribe({
+      next: (profile) => {
+        this.profile.set(profile);
+        this.notice.set('Added $100,000 in simulated practice cash. No real money was added.');
+        this.refresh();
+      },
+      error: (failure) => {
+        this.error.set(this.messageFor(failure));
+        this.busy.set(false);
+      },
+    });
+  }
+
+  get hasRealMarketData(): boolean {
+    return this.stocks().some((stock) => stock.priceType === 'MASSIVE_EOD');
+  }
+
+  get marketPriceLabel(): string {
+    return this.hasRealMarketData ? 'Real EOD prices' : 'Simulated demo prices';
   }
 
   removeFromWatchlist(item: WatchlistItem): void {
@@ -254,12 +316,21 @@ export class App implements OnInit {
   searchCatalogue(query: string): void {
     this.stockQuery = query;
     const request = ++this.catalogueRequest;
-    this.api.searchStocks(query).subscribe({
-      next: (items) => {
-        if (request === this.catalogueRequest) this.catalogueStocks.set(items);
-      },
-      error: (failure) => this.error.set(this.messageFor(failure)),
-    });
+    if (this.catalogueSearchTimeout) clearTimeout(this.catalogueSearchTimeout);
+    this.catalogueSearchTimeout = setTimeout(() => {
+      this.api.searchStocks(query).subscribe({
+        next: (items) => {
+          if (request === this.catalogueRequest) {
+            this.catalogueStocks.set(items.map((stock) => ({
+              ...stock,
+              inCatalogue: stock.inCatalogue ?? true,
+              primaryExchange: stock.primaryExchange ?? null,
+            })));
+          }
+        },
+        error: (failure) => this.error.set(this.messageFor(failure)),
+      });
+    }, 500);
   }
 
   loadStockAnalysis(ticker: string): void {
@@ -285,7 +356,7 @@ export class App implements OnInit {
     this.api.stocks().subscribe({
       next: (items) => {
         this.stocks.set(items);
-        this.catalogueStocks.set(items);
+        this.catalogueStocks.set(items.map((stock) => ({ ...stock, inCatalogue: true, primaryExchange: null })));
         if (items.length) {
           this.ticker = items[0].ticker;
           this.loadStockAnalysis(this.ticker);
@@ -301,7 +372,9 @@ export class App implements OnInit {
       return detail ?? 'An account with this username or email already exists. Sign in instead or use different details.';
     }
     if (failure.status === 401) return detail ?? 'Invalid username or password.';
+    if (failure.status === 404) return 'Your previous local demo account was cleared when the backend restarted. Create the account again to continue.';
     if (failure.status === 400) return detail ?? 'Check the username, email, and password, then try again.';
+    if (failure.status === 422) return detail ?? 'The request could not be completed with the current account balance or holdings.';
     if (failure.status === 0) return 'Could not reach PortfolioPro. Check that the backend is running on port 8081.';
     if (failure.status >= 500) return detail ?? 'The server could not complete the request. Please try again.';
     return detail ?? 'The request could not be completed. Please check the details and try again.';

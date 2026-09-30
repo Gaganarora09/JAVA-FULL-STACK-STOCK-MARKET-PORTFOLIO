@@ -27,6 +27,7 @@ services:
       DB_USERNAME: ${DB_USERNAME:-portfolio_app}
       DB_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
       PORTFOLIOPRO_JWT_SECRET: ${PORTFOLIOPRO_JWT_SECRET:-PortfolioPro-Local-Docker-Secret-Change-Before-Use}
+      MASSIVE_API_KEY: ${MASSIVE_API_KEY:-}
     ports:
       - "127.0.0.1:8081:8081"
     depends_on:

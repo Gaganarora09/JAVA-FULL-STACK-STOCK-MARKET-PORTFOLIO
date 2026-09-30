@@ -2,6 +2,9 @@ server:
   port: 8081
 
 app:
+  market-data:
+    api-key: ${MASSIVE_API_KEY:}
+    base-url: ${MASSIVE_API_URL:https://api.massive.com}
   jwt:
     # Development-only fallback. Set PORTFOLIOPRO_JWT_SECRET to a long random value outside local development.
     secret: ${PORTFOLIOPRO_JWT_SECRET:PortfolioPro-Local-Development-Secret-Key-Change-Me}

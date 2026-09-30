@@ -71,7 +71,7 @@
     <main class="dashboard" id="overview">
       <header class="topbar">
         <div><div class="breadcrumbs">Portfolio <span>/</span> Overview</div><h1>Good day, {{ username || 'Investor' }} <span class="wave">✦</span></h1></div>
-        <div class="top-actions"><span class="demo-pill"><span></span> SIMULATED DATA</span><button class="icon-button" type="button" aria-label="Refresh dashboard" (click)="refresh()" [disabled]="busy()">⟳</button><button class="mobile-logout" type="button" (click)="logout()">Log out</button></div>
+        <div class="top-actions"><span class="demo-pill"><span></span> {{ hasRealMarketData ? 'REAL EOD DATA' : 'SIMULATED DATA' }}</span><button class="icon-button" type="button" aria-label="Refresh dashboard" (click)="refresh()" [disabled]="busy()">⟳</button><button class="mobile-logout" type="button" (click)="logout()">Log out</button></div>
       </header>
 
       @if (error()) { <div class="alert error" role="alert">{{ error() }}</div> }
@@ -79,11 +79,11 @@
 
       <section class="overview-grid">
         <article class="card balance-card">
-          <div class="card-heading"><span class="eyebrow">TOTAL PORTFOLIO VALUE</span><span class="live-tag"><i></i> UPDATED JUST NOW</span></div>
+          <div class="card-heading"><span class="eyebrow">TOTAL PORTFOLIO VALUE</span><span class="live-tag"><i></i> {{ hasRealMarketData ? 'EOD PRICES · ' + (marketDataStatus()?.lastSuccessfulRefresh | date:'short') : 'DEMO PRICES' }}</span></div>
           <div class="balance-value">{{ money(summary()?.totalAccountValue) }}</div>
           <div class="balance-meta"><span class="gain-chip" [class.negative]="(analytics()?.totalGainLoss ?? 0) < 0">{{ (analytics()?.totalGainLoss ?? 0) >= 0 ? '↗' : '↘' }} {{ money(analytics()?.totalGainLoss) }} total P/L</span><span class="value-caption">Cash + investments</span></div>
           <div class="balance-divider"></div>
-          <div class="mini-metrics"><div><span>Cash available</span><strong>{{ money(summary()?.cashBalance) }}</strong></div><div><span>Invested value</span><strong>{{ money(summary()?.totalMarketValue) }}</strong></div><div><span>Unrealized P/L</span><strong [class.positive-text]="(summary()?.totalUnrealizedGainLoss ?? 0) >= 0">{{ money(summary()?.totalUnrealizedGainLoss) }}</strong></div></div>
+          <div class="mini-metrics"><div><span>Cash available</span><strong>{{ money(summary()?.cashBalance) }}</strong>@if ((summary()?.cashBalance ?? 0) < 1000) { <button class="text-link" type="button" (click)="addPracticeFunds()" [disabled]="busy()">Add $100,000 practice cash</button> }</div><div><span>Invested value</span><strong>{{ money(summary()?.totalMarketValue) }}</strong></div><div><span>Unrealized P/L</span><strong [class.positive-text]="(summary()?.totalUnrealizedGainLoss ?? 0) >= 0">{{ money(summary()?.totalUnrealizedGainLoss) }}</strong></div></div>
         </article>
 
         <article class="card allocation-card">
@@ -110,13 +110,13 @@
           </div>
         </article>
         <article class="card market-technical">
-          <div class="section-heading"><div><span class="eyebrow">SIMULATED TECHNICALS</span><h2>{{ technicalAnalysis()?.ticker ?? ticker }} indicators</h2></div><span class="trade-note">30 demo closes</span></div>
+          <div class="section-heading"><div><span class="eyebrow">{{ marketPriceLabel }}</span><h2>{{ technicalAnalysis()?.ticker ?? ticker }} indicators</h2></div><span class="trade-note">Daily closing prices</span></div>
           <div class="technical-metrics">
             <div><span>Last close</span><strong>{{ money(technicalAnalysis()?.latestClose) }}</strong></div>
             <div><span>SMA 20</span><strong>{{ technicalAnalysis()?.sma20 == null ? '—' : money(technicalAnalysis()?.sma20) }}</strong></div>
             <div><span>RSI 14</span><strong>{{ technicalAnalysis()?.rsi14 ?? '—' }}</strong></div>
           </div>
-          <p class="risk-caption">Generated sample data for API demonstration; not a market signal.</p>
+          <p class="risk-caption">{{ hasRealMarketData ? 'End-of-day market prices; prices may be delayed and are not a market signal.' : 'Generated sample data for API demonstration; not a market signal.' }}</p>
         </article>
       </section>
 
@@ -163,7 +163,7 @@
         <div class="trade-form">
           <label>Stock<select name="ticker" [(ngModel)]="ticker" (ngModelChange)="loadStockAnalysis($event)"><option value="" disabled>Select a stock</option>@for (stock of stocks(); track stock.ticker) { <option [value]="stock.ticker">{{ stock.ticker }} · {{ stock.companyName }}</option> }</select></label>
           <label>Quantity<input name="quantity" [(ngModel)]="quantity" type="number" min="1" step="1" /></label>
-          <div class="trade-price"><span>Demo price</span><strong>{{ money(stocks().find(s => s.ticker === ticker)?.simulatedPrice) }}</strong></div>
+          <div class="trade-price"><span>{{ stocks().find(s => s.ticker === ticker)?.priceType === 'MASSIVE_EOD' ? 'Last close' : 'Demo price' }}</span><strong>{{ money(stocks().find(s => s.ticker === ticker)?.currentPrice) }}</strong></div>
           <div class="trade-buttons"><button class="button buy-button" type="button" (click)="placeTrade('BUY')" [disabled]="busy() || !ticker || quantity < 1">Buy</button><button class="button sell-button" type="button" (click)="placeTrade('SELL')" [disabled]="busy() || !ticker || quantity < 1">Sell</button></div>
         </div>
       </section>
@@ -181,12 +181,13 @@
         <article class="card watch-card" id="watchlist">
           <div class="section-heading"><div><span class="eyebrow">KEEP AN EYE ON</span><h2>Watchlist</h2></div><span class="count-badge">{{ watchlist().length }}</span></div>
           <div class="watch-items">
-            @for (item of watchlist(); track item.ticker) { <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></span><strong class="watch-price">{{ money(item.simulatedPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div> }
+            @for (item of watchlist(); track item.ticker) { <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></span><strong class="watch-price">{{ money(item.currentPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div> }
             @if (!watchlist().length) { <div class="empty-state compact"><span class="empty-symbol">☆</span><strong>Your watchlist is empty</strong><p>Add a stock from the catalogue.</p></div> }
           </div>
-          <div class="catalogue"><div class="catalogue-title"><strong>Stock catalogue</strong><small>Seeded demo prices</small></div>
-            <input class="catalogue-search" type="search" placeholder="Search ticker or company" [value]="stockQuery" (input)="searchCatalogue($any($event.target).value)" />
-            @for (stock of catalogueStocks(); track stock.ticker) { <div class="catalogue-row"><span><strong>{{ stock.ticker }}</strong><small>{{ stock.companyName }}</small></span><strong>{{ money(stock.simulatedPrice) }}</strong><button type="button" class="add-watch" (click)="addToWatchlist(stock)" [disabled]="watchlist().some(item => item.ticker === stock.ticker)" [attr.aria-label]="'Add ' + stock.ticker + ' to watchlist'">{{ watchlist().some(item => item.ticker === stock.ticker) ? '✓' : '+' }}</button></div> }
+          <div class="catalogue"><div class="catalogue-title"><strong>Stock catalogue</strong><small>{{ marketPriceLabel }} @if (marketDataStatus()?.lastSuccessfulRefresh) { · updated {{ marketDataStatus()!.lastSuccessfulRefresh | date:'short' }} }</small></div>
+            <button class="text-link" type="button" (click)="refreshMarketData()" [disabled]="busy()">Refresh real stock prices</button>
+            <input class="catalogue-search" type="search" placeholder="Search ticker or company (Massive stock directory)" [value]="stockQuery" (input)="searchCatalogue($any($event.target).value)" />
+            @for (stock of catalogueStocks(); track stock.ticker) { <div class="catalogue-row"><span><strong>{{ stock.ticker }}</strong><small>{{ stock.companyName }}@if (stock.primaryExchange) { · {{ stock.primaryExchange }} }</small></span><strong>{{ stock.inCatalogue ? money(stock.currentPrice) : 'Add for EOD price' }}</strong>@if (stock.inCatalogue) { <button type="button" class="add-watch" (click)="addToWatchlist(stock)" [disabled]="watchlist().some(item => item.ticker === stock.ticker)" [attr.aria-label]="'Add ' + stock.ticker + ' to watchlist'">{{ watchlist().some(item => item.ticker === stock.ticker) ? '✓' : '+' }}</button> } @else { <button type="button" class="add-watch" (click)="importStock(stock)" [disabled]="busy()" [attr.aria-label]="'Add ' + stock.ticker + ' to stock catalogue'">Add</button> }</div> }
             @if (!catalogueStocks().length) { <p class="empty-small">No stocks match that search.</p> }
           </div>
         </article>

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 
 export interface AuthResponse {
   token: string;
@@ -11,10 +11,35 @@ export interface AuthResponse {
 export interface Stock {
   ticker: string;
   companyName: string;
-  simulatedPrice: number;
+  currentPrice: number;
   priceType: string;
   sector: string;
   priceUpdatedAt: string;
+}
+
+export interface StockSearchResult {
+  ticker: string;
+  companyName: string;
+  currentPrice: number | null;
+  priceType: string;
+  sector: string | null;
+  priceUpdatedAt: string | null;
+  inCatalogue: boolean;
+  primaryExchange: string | null;
+}
+
+export interface MarketDataStatus {
+  configured: boolean;
+  provider: string;
+  frequency: string;
+  lastSuccessfulRefresh: string | null;
+}
+
+export interface MarketDataRefreshResult {
+  provider: string;
+  updatedStocks: number;
+  failedStocks: number;
+  refreshedAt: string;
 }
 
 export interface StockFundamentals {
@@ -105,7 +130,7 @@ export interface WatchlistItem {
   ticker: string;
   companyName: string;
   sector: string;
-  simulatedPrice: number;
+  currentPrice: number;
   priceUpdatedAt: string;
   addedAt: string;
 }
@@ -126,11 +151,27 @@ export class PortfolioApi {
     return this.http.get<Stock[]>('/api/stocks');
   }
 
-  searchStocks(query: string, sector?: string): Observable<Stock[]> {
+  marketDataStatus(): Observable<MarketDataStatus> {
+    return this.http.get<MarketDataStatus>('/api/market-data/status').pipe(
+      catchError((failure) => failure.status === 401 || failure.status === 404
+        ? of({ configured: false, provider: 'Massive', frequency: 'End-of-day daily bars', lastSuccessfulRefresh: null })
+        : throwError(() => failure)),
+    );
+  }
+
+  refreshMarketData(): Observable<MarketDataRefreshResult> {
+    return this.http.post<MarketDataRefreshResult>('/api/market-data/refresh', {});
+  }
+
+  searchStocks(query: string, sector?: string): Observable<StockSearchResult[]> {
     const params: Record<string, string> = {};
     if (query.trim()) params['q'] = query.trim();
     if (sector?.trim()) params['sector'] = sector.trim();
-    return this.http.get<Stock[]>('/api/stocks/search', { params });
+    return this.http.get<StockSearchResult[]>('/api/stocks/search', { params });
+  }
+
+  importStock(ticker: string): Observable<Stock> {
+    return this.http.post<Stock>(`/api/stocks/${encodeURIComponent(ticker)}/import`, {});
   }
 
   fundamentals(ticker: string): Observable<StockFundamentals> {
@@ -145,6 +186,10 @@ export class PortfolioApi {
 
   profile(): Observable<UserProfile> {
     return this.http.get<UserProfile>('/api/users/me');
+  }
+
+  addPracticeFunds(): Observable<UserProfile> {
+    return this.http.post<UserProfile>('/api/users/me/demo-funds', {});
   }
 
   summary(): Observable<PortfolioSummary> {

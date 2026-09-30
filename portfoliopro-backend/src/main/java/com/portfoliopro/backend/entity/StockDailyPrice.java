@@ -28,4 +28,7 @@ public class StockDailyPrice {
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal closePrice;
+
+    @Column(length = 30)
+    private String dataSource = "SIMULATED_DEMO";
 }

@@ -40,4 +40,7 @@ public class Stock {
     private BigDecimal demoDividendYield;
 
     private Instant priceUpdatedAt = Instant.now();
+
+    @Column(length = 30)
+    private String priceSource = "SIMULATED_DEMO";
 }
