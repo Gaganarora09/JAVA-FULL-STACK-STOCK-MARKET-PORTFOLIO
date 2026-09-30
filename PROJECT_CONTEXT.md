@@ -57,7 +57,7 @@ To enable Massive, copy `.env.example` to `.env`, set `MASSIVE_API_KEY` in `.env
 - Docker Desktop/MySQL remains unavailable; ports 8081 and 4200 are running, while MySQL port 3306 is not. The existing Compose setup still persists MySQL data in `portfolio_pro_mysql` once Docker is available.
 - Massive key was provided by the user and saved only in ignored local `.env`. The live backend reports configured=true. Public search for `NVDA` returned Nvidia Corp from Massive, filtered to common stocks. The authenticated manual price refresh endpoint has not yet been run.
 - Dynamic Massive ticker search and stock import are active in the running backend. Adding a result imports up to one year of EOD bars and makes the ticker available in the catalogue for watchlist and simulated trades. The user approved the backend restart and H2 reset; register a new account to use authenticated features. H2 remains in-memory, so another restart clears user and trade data.
-- Angular production build and direct Java compilation succeeded; the staged Spring Boot jar is running. Tests were not run. Changes remain uncommitted.
+- Angular production build and direct Java compilation succeeded; the staged Spring Boot jar is running. Tests were not run. The source changes and this context file were pushed to `main` in commit `dd9d39f` (follow-up context correction committed separately).
 
 ## First steps next time
 
