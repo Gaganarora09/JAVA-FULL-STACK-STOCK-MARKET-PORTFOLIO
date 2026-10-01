@@ -1,14 +1,24 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { Router } from '@angular/router';
 import { of } from 'rxjs';
+import { vi } from 'vitest';
 import { App } from './app';
+import { routes } from './app.routes';
 import { PortfolioApi } from './portfolio-api.service';
 
 describe('App', () => {
+  const apiStub = {
+    stocks: () => of([]),
+    fundamentals: () => of(null),
+    technicalAnalysis: () => of(null),
+  };
+
   beforeEach(async () => {
     sessionStorage.removeItem('portfoliopro.jwt');
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [{ provide: PortfolioApi, useValue: { stocks: () => of([]) } }],
+      providers: [provideRouter(routes), { provide: PortfolioApi, useValue: apiStub }],
     }).compileComponents();
   });
 
@@ -28,5 +38,26 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.auth-form-wrap h2')?.textContent).toContain('Create your account');
     expect(compiled.querySelector('#email')).not.toBeNull();
+  });
+
+  it('normalizes stock selections before loading and navigating', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.selectStock(' aapl ');
+
+    expect(component.ticker).toBe('AAPL');
+    expect(navigate).toHaveBeenCalledWith(['/stock', 'AAPL']);
+  });
+
+  it('labels the active route in the dashboard breadcrumb', async () => {
+    const fixture = TestBed.createComponent(App);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/performance');
+
+    expect(fixture.componentInstance.currentSection).toBe('Performance');
   });
 });
