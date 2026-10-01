@@ -235,6 +235,12 @@ class AuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(originalTradeId));
         assertThat(tradeRepository.count()).isEqualTo(1);
+        var userAfterReplay = userRepository.findByUsername("consistent-trader").orElseThrow();
+        var portfolioAfterReplay = portfolioRepository.findByUserId(userAfterReplay.getId()).orElseThrow();
+        var holdingAfterReplay = holdingRepository.findByPortfolioIdAndStockId(
+                portfolioAfterReplay.getId(), stock.getId()).orElseThrow();
+        assertThat(userAfterReplay.getCashBalance()).isEqualByComparingTo("99800.0000");
+        assertThat(holdingAfterReplay.getQuantity()).isEqualTo(2);
 
         stock.setCurrentPrice(new java.math.BigDecimal("200.0000"));
         stockRepository.save(stock);
