@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -197,5 +197,26 @@ describe('App', () => {
     component.removeFromWatchlist(watchlistResponse[0]);
 
     expect(component.watchlist()).toEqual([]);
+  });
+
+  it('surfaces watchlist refresh failures after an add', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    vi.spyOn(apiStub, 'watchlist').mockReturnValue(
+      throwError(() => ({ status: 503, error: { message: 'Watchlist unavailable' } })),
+    );
+
+    component.addToWatchlist({
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      currentPrice: 100,
+      priceType: 'SIMULATED_DEMO',
+      sector: 'Technology',
+      priceUpdatedAt: null,
+      inCatalogue: true,
+      primaryExchange: null,
+    });
+
+    expect(component.error()).toBe('Watchlist unavailable');
   });
 });

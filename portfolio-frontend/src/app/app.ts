@@ -160,7 +160,10 @@ export class App implements OnInit {
     this.api.addWatchlist(stock.ticker).subscribe({
       next: () => {
         this.notice.set(`${stock.ticker} added to your watchlist.`);
-        this.api.watchlist().subscribe((items) => this.watchlist.set(items));
+        this.api.watchlist().subscribe({
+          next: (items) => this.watchlist.set(items),
+          error: (failure) => this.error.set(this.messageFor(failure)),
+        });
       },
       error: (failure) => this.error.set(this.messageFor(failure)),
     });

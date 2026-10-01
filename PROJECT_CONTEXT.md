@@ -95,6 +95,7 @@ Core details:
 - Frontend coverage now verifies persisted trade activity filtering and client-side pagination.
 - Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - Frontend coverage now verifies watchlist state refreshes after successful add/remove API operations.
+- Watchlist add now surfaces errors from the follow-up persisted-list refresh instead of silently leaving stale state.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.
