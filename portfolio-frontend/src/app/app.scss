@@ -80,9 +80,12 @@
 .market-fundamentals, .market-technical { padding: 17px 20px; }
 .fundamental-metrics, .technical-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 19px; }
 .technical-metrics { grid-template-columns: repeat(3, 1fr); }
+.fundamental-metrics { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .fundamental-metrics > div, .technical-metrics > div { display: grid; gap: 6px; min-width: 0; }
 .fundamental-metrics span, .technical-metrics span { color: #89968e; font-size: 9px; }
 .fundamental-metrics strong, .technical-metrics strong { overflow: hidden; color: #31463a; font-size: 12px; text-overflow: ellipsis; }
+.analysis-subtitle { margin: 5px 0 0; color: #89968e; font-size: 9px; }
+.analysis-caption { margin: 15px 0 0; color: #96a098; font-size: 8px; line-height: 1.45; }
 .technical-history { min-width: 0; margin-top: 16px; }
 .technical-history-heading { display: flex; justify-content: space-between; gap: 12px; color: #89968e; font-size: 8px; letter-spacing: .4px; }
 .technical-history-heading span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -242,6 +245,7 @@ td:first-child { display: flex; align-items: center; gap: 8px; }
   .overview-grid { grid-template-columns: 1fr; }
   .performance-grid { grid-template-columns: 1fr; }
   .market-analysis-grid { grid-template-columns: 1fr; }
+  .fundamental-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .allocation-content { justify-content: flex-start; gap: 30px; }
   .donut { flex-basis: 120px; width: 120px; height: 120px; }
   .donut-center { width: 78px; height: 78px; }
@@ -260,6 +264,7 @@ td:first-child { display: flex; align-items: center; gap: 8px; }
   .top-actions { gap: 7px; }
   .performance-card, .risk-card, .market-fundamentals, .market-technical { padding-inline: 14px; }
   .performance-heading { align-items: flex-start; flex-direction: column; }
+  .fundamental-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .demo-pill { padding: 6px 7px; font-size: 7px; }
   .icon-button { width: 28px; height: 28px; }
   .mobile-logout { display: inline; padding: 6px 8px; border: 1px solid #e2e8e4; border-radius: 6px; color: #51675b; background: #fff; font-size: 9px; }

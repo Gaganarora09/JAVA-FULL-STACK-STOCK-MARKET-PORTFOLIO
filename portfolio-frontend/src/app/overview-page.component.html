@@ -28,13 +28,15 @@
 
 <section class="market-analysis-grid">
   <article class="card market-fundamentals">
-    <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2></div><span class="trade-note">Demo values</span></div>
+    <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2><p class="analysis-subtitle">{{ fundamentals()?.companyName ?? 'Company fundamentals' }}</p></div><span class="trade-note">{{ fundamentals()?.dataSource ?? 'SIMULATED_DEMO' }}</span></div>
     <div class="fundamental-metrics">
+      <div><span>Reference price</span><strong>{{ money(fundamentals()?.simulatedPrice) }}</strong></div>
       <div><span>EPS</span><strong>{{ fundamentals()?.earningsPerShare == null ? '—' : money(fundamentals()?.earningsPerShare) }}</strong></div>
       <div><span>P / E</span><strong>{{ fundamentals()?.priceToEarnings ?? '—' }}</strong></div>
       <div><span>Market cap</span><strong>{{ compactMoney(fundamentals()?.marketCapitalization) }}</strong></div>
       <div><span>Dividend yield</span><strong>{{ fundamentals()?.dividendYield == null ? '—' : (fundamentals()!.dividendYield! * 100 | number:'1.2-2') + '%' }}</strong></div>
     </div>
+    <p class="analysis-caption">Illustrative company metrics from the backend stock catalogue. Updated {{ fundamentals()?.updatedAt | date:'MMM d, y, h:mm a' }}.</p>
   </article>
 
   <article class="card market-technical">
