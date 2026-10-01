@@ -93,6 +93,7 @@ Core details:
 - Backend trade integration coverage now also verifies persisted cash, market value, total account value, unrealized P/L, quantity, and average cost after a buy/sell sequence.
 - Trade execution keeps the in-memory portfolio holding collection synchronized when creating or removing a position, so same-transaction snapshot capture includes the correct holdings.
 - Frontend coverage now verifies persisted trade activity filtering and client-side pagination.
+- Activity pagination coverage verifies filter changes reset to the first valid page.
 - Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - Frontend coverage now verifies watchlist state refreshes after successful add/remove API operations.
 - Watchlist add now surfaces errors from the follow-up persisted-list refresh instead of silently leaving stale state.

@@ -126,6 +126,28 @@ describe('App', () => {
     expect(component.filteredTrades[0].id).toBe(7);
   });
 
+  it('resets activity pagination when the selected filter changes', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    component.trades.set(Array.from({ length: 13 }, (_, index) => ({
+      id: index + 1,
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      type: index < 12 ? 'BUY' : 'SELL',
+      quantity: 1,
+      priceAtExecution: 100,
+      realizedGainLoss: 0,
+      executedAt: '2026-10-01T00:00:00Z',
+    })));
+    component.changeActivityPage(2);
+
+    component.setActivityFilter('SELL');
+
+    expect(component.activityPage).toBe(1);
+    expect(component.filteredTrades).toHaveLength(1);
+    expect(component.filteredTrades[0].type).toBe('SELL');
+  });
+
   it('derives trade readiness from persisted cash and holdings', () => {
     const fixture = TestBed.createComponent(App);
     const component = fixture.componentInstance;
