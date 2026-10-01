@@ -56,16 +56,20 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 remains the default local database; use the mysql Spring profile for MySQL. -->
+        <!-- H2 is the fast local/test default. PostgreSQL is the persistent application database. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
         </dependency>
 
         <dependency>

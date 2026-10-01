@@ -1,18 +1,17 @@
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:17
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: portfolio_pro
-      MYSQL_USER: ${DB_USERNAME:-portfolio_app}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_local_only}
+      POSTGRES_DB: ${DB_NAME:-portfolio_pro}
+      POSTGRES_USER: ${DB_USERNAME:-portfolio_app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:5432:5432"
     volumes:
-      - portfolio_pro_mysql:/var/lib/mysql
+      - portfolio_pro_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -22,8 +21,9 @@ services:
       context: ./portfoliopro-backend
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: mysql
-      DB_URL: jdbc:mysql://mysql:3306/portfolio_pro?serverTimezone=UTC
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-portfolio_pro}
+      DB_NAME: ${DB_NAME:-portfolio_pro}
       DB_USERNAME: ${DB_USERNAME:-portfolio_app}
       DB_PASSWORD: ${DB_PASSWORD:-portfolio_local_only}
       PORTFOLIOPRO_JWT_SECRET: ${PORTFOLIOPRO_JWT_SECRET:-PortfolioPro-Local-Docker-Secret-Change-Before-Use}
@@ -31,7 +31,7 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/api/health >/dev/null || exit 1"]
@@ -51,4 +51,4 @@ services:
         condition: service_healthy
 
 volumes:
-  portfolio_pro_mysql:
+  portfolio_pro_postgres:

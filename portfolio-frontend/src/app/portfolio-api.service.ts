@@ -220,7 +220,7 @@ export class PortfolioApi {
     return this.http.delete<void>(`/api/watchlist/${encodeURIComponent(ticker)}`);
   }
 
-  trade(ticker: string, type: 'BUY' | 'SELL', quantity: number): Observable<Trade> {
-    return this.http.post<Trade>('/api/trades', { ticker, type, quantity });
+  trade(ticker: string, type: 'BUY' | 'SELL', quantity: number, idempotencyKey: string): Observable<Trade> {
+    return this.http.post<Trade>('/api/trades', { ticker, type, quantity, idempotencyKey });
   }
 }

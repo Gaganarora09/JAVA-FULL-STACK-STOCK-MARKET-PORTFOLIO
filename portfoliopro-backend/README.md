@@ -4,19 +4,19 @@ Spring Boot REST API for an educational portfolio simulator. Orders are simulate
 
 ## Database profiles
 
-The default profile uses an in-memory H2 database. Data is reset when the backend process stops.
+The default profile uses an in-memory H2 database for fast local development and tests. Data is reset when the backend process stops.
 
-The `mysql` profile is configured for the intended MySQL database, `portfolio_pro`. It requires a reachable MySQL server and a database user allowed to create/use that database. Configure credentials in the environment; do not commit them:
+Use the `postgres` profile for persistent development data. It expects PostgreSQL database `portfolio_pro`, runs the Flyway migration, and validates the JPA model against the migrated schema:
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE = 'mysql'
-$env:DB_URL = 'jdbc:mysql://localhost:3306/portfolio_pro?createDatabaseIfNotExist=true&serverTimezone=UTC'
-$env:DB_USERNAME = 'root'
+$env:SPRING_PROFILES_ACTIVE = 'postgres'
+$env:DB_URL = 'jdbc:postgresql://localhost:5432/portfolio_pro'
+$env:DB_USERNAME = 'portfolio_app'
 $env:DB_PASSWORD = 'your-local-database-password'
 $env:PORTFOLIOPRO_JWT_SECRET = 'set-a-long-random-secret-value-here'
 ```
 
-Then run the app from this directory with `mvn spring-boot:run` or launch `BackendApplication` from IntelliJ. The MySQL profile uses Hibernate `ddl-auto: update` for this learning project; use reviewed schema migrations before production deployment.
+Then run the app from this directory with `mvn spring-boot:run` or launch `BackendApplication` from IntelliJ.
 
 The project targets Java 21. `GET /api/health` is public and returns a small service status response.
 

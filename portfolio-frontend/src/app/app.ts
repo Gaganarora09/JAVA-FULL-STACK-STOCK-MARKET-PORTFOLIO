@@ -31,8 +31,11 @@ export class App implements OnInit {
   readonly profile = signal<UserProfile | null>(null);
   readonly performance = signal<PortfolioPerformancePoint[]>([]);
   readonly performanceRange = signal<'week' | 'month' | 'year' | 'all'>('month');
-  readonly illustrativePerformance = signal(false);
   readonly marketDataStatus = signal<MarketDataStatus | null>(null);
+
+  activityFilter: 'ALL' | 'BUY' | 'SELL' = 'ALL';
+  activityPage = 1;
+  readonly activityPageSize = 6;
 
   username = '';
   email = '';
@@ -86,7 +89,6 @@ export class App implements OnInit {
     this.profile.set(null);
     this.analytics.set(null);
     this.performance.set([]);
-    this.illustrativePerformance.set(false);
     this.trades.set([]);
     this.watchlist.set([]);
     this.password = '';
@@ -191,6 +193,41 @@ export class App implements OnInit {
     });
   }
 
+  get selectedStock(): Stock | undefined {
+    return this.stocks().find((stock) => stock.ticker === this.ticker);
+  }
+
+  get estimatedOrderValue(): number {
+    return (this.selectedStock?.currentPrice ?? 0) * (Number.isFinite(this.quantity) ? this.quantity : 0);
+  }
+
+  get selectedHoldingQuantity(): number {
+    return this.summary()?.holdings.find((holding) => holding.ticker === this.ticker)?.quantity ?? 0;
+  }
+
+  get validTradeQuantity(): boolean {
+    return Number.isInteger(this.quantity) && this.quantity > 0 && this.quantity <= 1_000_000;
+  }
+
+  get canBuy(): boolean {
+    return this.validTradeQuantity && this.estimatedOrderValue > 0
+      && this.estimatedOrderValue <= (this.summary()?.cashBalance ?? 0);
+  }
+
+  get canSell(): boolean {
+    return this.validTradeQuantity && this.quantity <= this.selectedHoldingQuantity;
+  }
+
+  get tradeReadinessMessage(): string {
+    if (!this.ticker) return 'Select a stock to preview the order.';
+    if (!this.validTradeQuantity) return 'Enter a positive whole-share quantity.';
+    if (!this.selectedStock) return 'The selected stock is not available in the catalogue.';
+    if (!this.canBuy && !this.canSell) return 'Buy requires enough cash; sell requires enough owned shares.';
+    if (!this.canBuy) return 'Buy is unavailable because the order exceeds available cash.';
+    if (!this.canSell) return 'Sell is unavailable because you do not own enough shares.';
+    return 'Both simulated order actions are ready.';
+  }
+
   get hasRealMarketData(): boolean {
     return this.stocks().some((stock) => stock.priceType === 'MASSIVE_EOD');
   }
@@ -210,7 +247,8 @@ export class App implements OnInit {
     this.error.set('');
     this.notice.set('');
     this.busy.set(true);
-    this.api.trade(this.ticker, type, this.quantity).subscribe({
+    const idempotencyKey = crypto.randomUUID();
+    this.api.trade(this.ticker, type, this.quantity, idempotencyKey).subscribe({
       next: (trade) => {
         this.notice.set(`${type === 'BUY' ? 'Bought' : 'Sold'} ${trade.quantity} ${trade.ticker} share${trade.quantity === 1 ? '' : 's'} at ${this.money(trade.priceAtExecution)}. This is a simulated trade.`);
         this.refresh();
@@ -220,6 +258,30 @@ export class App implements OnInit {
         this.busy.set(false);
       },
     });
+  }
+
+  get filteredTrades(): Trade[] {
+    const filtered = this.activityFilter === 'ALL'
+      ? this.trades()
+      : this.trades().filter((trade) => trade.type === this.activityFilter);
+    const start = (this.activityPage - 1) * this.activityPageSize;
+    return filtered.slice(start, start + this.activityPageSize);
+  }
+
+  get activityTotalPages(): number {
+    const count = this.activityFilter === 'ALL'
+      ? this.trades().length
+      : this.trades().filter((trade) => trade.type === this.activityFilter).length;
+    return Math.max(1, Math.ceil(count / this.activityPageSize));
+  }
+
+  setActivityFilter(filter: 'ALL' | 'BUY' | 'SELL'): void {
+    this.activityFilter = filter;
+    this.activityPage = 1;
+  }
+
+  changeActivityPage(delta: number): void {
+    this.activityPage = Math.min(this.activityTotalPages, Math.max(1, this.activityPage + delta));
   }
 
   money(value: number | null | undefined): string {
@@ -237,6 +299,18 @@ export class App implements OnInit {
     });
     if (cursor < 100) slices.push(`#e8ecea ${cursor}% 100%`);
     return `conic-gradient(${slices.join(', ') || '#e8ecea 0% 100%'})`;
+  }
+
+  technicalHistoryLine(): string {
+    const values = this.technicalAnalysis()?.history.map((point) => point.close) ?? [];
+    if (!values.length) return '';
+    const min = Math.min(...values);
+    const spread = Math.max(...values) - min;
+    return values.map((value, index) => {
+      const x = values.length === 1 ? 200 : 8 + (index * 384) / (values.length - 1);
+      const y = spread === 0 ? 46 : 76 - ((value - min) / spread) * 60;
+      return `${x},${y}`;
+    }).join(' ');
   }
 
   performanceLine(): string {
@@ -260,47 +334,8 @@ export class App implements OnInit {
   }
 
   private setPerformanceData(recorded: PortfolioPerformancePoint[]): void {
-    if (recorded.length >= 2) {
-      this.performance.set(recorded);
-      this.illustrativePerformance.set(false);
-      return;
-    }
-
-    const range = this.performanceRange();
-    const currentValue = recorded.at(-1)?.totalValue ?? this.summary()?.totalAccountValue ?? 100000;
-    const pointCount = range === 'week' ? 7 : range === 'month' ? 30 : range === 'year' ? 52 : 60;
-    const totalReturn = range === 'week' ? 0.012 : range === 'month' ? -0.038 : range === 'year' ? 0.155 : 0.285;
-    const amplitude = range === 'week' ? 0.004 : range === 'month' ? 0.013 : range === 'year' ? 0.025 : 0.04;
-    const startValue = currentValue / (1 + totalReturn);
-    const lastDate = recorded.length
-      ? new Date(`${recorded[recorded.length - 1].date}T00:00:00Z`)
-      : new Date();
-    lastDate.setUTCHours(0, 0, 0, 0);
-    const points = Array.from({ length: pointCount }, (_, index) => {
-      const progress = index / (pointCount - 1);
-      const trend = startValue + (currentValue - startValue) * progress;
-      const oscillation = Math.sin(progress * Math.PI * (range === 'week' ? 3 : range === 'month' ? 8 : 12))
-        * currentValue * amplitude;
-      const date = new Date(lastDate);
-      if (range === 'week' || range === 'month') {
-        date.setUTCDate(date.getUTCDate() - (pointCount - 1 - index));
-      } else if (range === 'year') {
-        date.setUTCDate(date.getUTCDate() - (pointCount - 1 - index) * 7);
-      } else {
-        date.setUTCMonth(date.getUTCMonth() - (pointCount - 1 - index));
-      }
-      return {
-        date: date.toISOString().slice(0, 10),
-        cashBalance: 0,
-        investedValue: 0,
-        totalValue: Math.round((trend + oscillation) * 100) / 100,
-        source: 'ILLUSTRATIVE_ONLY',
-      };
-    });
-    this.performance.set(points);
-    this.illustrativePerformance.set(true);
+    this.performance.set(recorded);
   }
-
   performanceChange(): number {
     const points = this.performance();
     if (points.length < 2 || points[0].totalValue === 0) return 0;
@@ -331,6 +366,11 @@ export class App implements OnInit {
         error: (failure) => this.error.set(this.messageFor(failure)),
       });
     }, 500);
+  }
+
+  selectStock(ticker: string): void {
+    this.ticker = ticker;
+    this.loadStockAnalysis(ticker);
   }
 
   loadStockAnalysis(ticker: string): void {

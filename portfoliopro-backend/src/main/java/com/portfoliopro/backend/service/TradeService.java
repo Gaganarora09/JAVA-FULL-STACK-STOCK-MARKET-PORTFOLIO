@@ -30,13 +30,28 @@ public class TradeService {
         User user = userRepository.findByUsernameForUpdate(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
-        Stock stock = stockRepository.findByTicker(request.getTicker().toUpperCase())
+        String ticker = request.getTicker().trim().toUpperCase(java.util.Locale.ROOT);
+        if (request.getIdempotencyKey() != null) {
+            var previous = tradeRepository.findByUserIdAndIdempotencyKey(user.getId(), request.getIdempotencyKey());
+            if (previous.isPresent()) {
+                Trade trade = previous.get();
+                if (trade.getStock().getTicker().equals(ticker)
+                        && trade.getType() == request.getType()
+                        && trade.getQuantity().equals(request.getQuantity())) return trade;
+                throw new IllegalStateException("This idempotency key was already used for a different trade.");
+            }
+        }
+
+        Stock stock = stockRepository.findByTicker(ticker)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown ticker: " + request.getTicker()));
 
         Portfolio portfolio = portfolioRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new IllegalStateException("User has no portfolio: " + user.getId()));
 
         BigDecimal price = stock.getCurrentPrice();
+        if (price == null || price.signum() <= 0) {
+            throw new IllegalStateException("This stock does not have a valid execution price.");
+        }
         BigDecimal totalCost = price.multiply(BigDecimal.valueOf(request.getQuantity()));
         BigDecimal realizedGainLoss = BigDecimal.ZERO;
 
@@ -53,6 +68,7 @@ public class TradeService {
         trade.setQuantity(request.getQuantity());
         trade.setPriceAtExecution(price);
         trade.setRealizedGainLoss(realizedGainLoss);
+        trade.setIdempotencyKey(request.getIdempotencyKey());
         Trade savedTrade = tradeRepository.save(trade);
         portfolioSnapshotService.capture(user.getUsername());
         return savedTrade;
@@ -81,7 +97,12 @@ public class TradeService {
             BigDecimal existingTotalCost = holding.getAverageCostBasis()
                     .multiply(BigDecimal.valueOf(holding.getQuantity()));
             BigDecimal newTotalCost = existingTotalCost.add(totalCost);
-            int newQuantity = holding.getQuantity() + quantity;
+            int newQuantity;
+            try {
+                newQuantity = Math.addExact(holding.getQuantity(), quantity);
+            } catch (ArithmeticException exception) {
+                throw new IllegalStateException("The resulting share quantity is too large.");
+            }
 
             holding.setQuantity(newQuantity);
             holding.setAverageCostBasis(newTotalCost.divide(BigDecimal.valueOf(newQuantity), 4, java.math.RoundingMode.HALF_UP));

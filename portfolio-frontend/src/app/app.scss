@@ -271,3 +271,5 @@ td:first-child { display: flex; align-items: center; gap: 8px; }
   th, td { padding-inline: 6px; }
   .dashboard-footer { flex-direction: column; gap: 6px; }
 }
+
+.activity-filters{display:flex;gap:2px}.activity-filters button,.activity-pagination button{padding:4px 7px;border:1px solid #e2e8e4;border-radius:4px;color:#7c8a81;background:#fff;font:inherit;font-size:8px;cursor:pointer}.activity-filters button.selected{color:#21664e;background:#e6f1e9}.activity-pagination{display:flex;justify-content:space-between;margin-top:10px;color:#929e96;font-size:9px}.activity-pagination div{display:flex;gap:6px}

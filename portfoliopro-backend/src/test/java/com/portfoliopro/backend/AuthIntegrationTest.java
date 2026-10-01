@@ -213,6 +213,77 @@ class AuthIntegrationTest {
         assertThat(holdingRepository.countByPortfolioId(portfolioId)).isZero();
     }
 
+    @Test
+    void tradeExecutionUsesWeightedCostBasisAndIdempotencyKey() throws Exception {
+        String token = registerAndGetToken("consistent-trader", "consistent@example.com");
+        var stock = stockRepository.findByTicker("AAPL").orElseThrow();
+        stock.setCurrentPrice(new java.math.BigDecimal("100.0000"));
+        stockRepository.save(stock);
+
+        String firstBuy = """
+                {"ticker":"AAPL","type":"BUY","quantity":2,"idempotencyKey":"11111111-1111-4111-8111-111111111111"}
+                """;
+        String firstResponse = mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(firstBuy))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        long originalTradeId = objectMapper.readTree(firstResponse).get("id").asLong();
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(firstBuy))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(originalTradeId));
+        assertThat(tradeRepository.count()).isEqualTo(1);
+
+        stock.setCurrentPrice(new java.math.BigDecimal("200.0000"));
+        stockRepository.save(stock);
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ticker\":\"AAPL\",\"type\":\"BUY\",\"quantity\":2}"))
+                .andExpect(status().isOk());
+
+        var user = userRepository.findByUsername("consistent-trader").orElseThrow();
+        var portfolio = portfolioRepository.findByUserId(user.getId()).orElseThrow();
+        var holding = holdingRepository.findByPortfolioIdAndStockId(portfolio.getId(), stock.getId()).orElseThrow();
+        assertThat(holding.getQuantity()).isEqualTo(4);
+        assertThat(holding.getAverageCostBasis()).isEqualByComparingTo("150.0000");
+        assertThat(user.getCashBalance()).isEqualByComparingTo("99400.0000");
+
+        stock.setCurrentPrice(new java.math.BigDecimal("250.0000"));
+        stockRepository.save(stock);
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ticker\":\"AAPL\",\"type\":\"SELL\",\"quantity\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realizedGainLoss").value(100.00));
+
+        assertThat(holdingRepository.findByPortfolioIdAndStockId(portfolio.getId(), stock.getId()).orElseThrow()
+                .getQuantity()).isEqualTo(3);
+        assertThat(userRepository.findById(user.getId()).orElseThrow().getCashBalance())
+                .isEqualByComparingTo("99650.0000");
+        assertThat(tradeRepository.count()).isEqualTo(3);
+    }
+
+    @Test
+    void idempotencyKeyCannotBeReusedForDifferentTrade() throws Exception {
+        String token = registerAndGetToken("key-owner", "key-owner@example.com");
+        String key = "22222222-2222-4222-8222-222222222222";
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ticker\":\"AAPL\",\"type\":\"BUY\",\"quantity\":1,\"idempotencyKey\":\"" + key + "\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ticker\":\"AAPL\",\"type\":\"BUY\",\"quantity\":2,\"idempotencyKey\":\"" + key + "\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(tradeRepository.count()).isEqualTo(1);
+    }
+
     private String registerAndGetToken(String username, String email) throws Exception {
         String response = mvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

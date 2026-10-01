@@ -28,7 +28,7 @@ public class Trade {
     private Stock stock;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private TradeType type;
 
     @Column(nullable = false)
@@ -42,6 +42,9 @@ public class Trade {
 
     @Column(nullable = false)
     private Instant executedAt = Instant.now();
+
+    @Column(length = 36)
+    private String idempotencyKey;
 
     public enum TradeType {
         BUY, SELL

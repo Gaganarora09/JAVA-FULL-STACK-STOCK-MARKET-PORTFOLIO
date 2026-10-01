@@ -1,74 +1,119 @@
 # PortfolioPro project context
 
-This file is the handoff note for future work on this repository. Update it when major project decisions or run-state changes occur. Do not put passwords, API keys, JWTs, or other secrets here.
+This is the handoff note for future work on this repository. Read it before editing. Update it after major implementation or runtime changes. Do not put passwords, API keys, JWTs, or other secrets here.
 
 ## Project goal
 
-PortfolioPro is an educational stock portfolio and trading simulator. It has an Angular frontend and a Java 21 / Spring Boot REST backend, with MySQL as the intended persistent database. Trades are simulated; the app does not connect to a brokerage or place real-money orders.
+PortfolioPro is an educational stock portfolio and paper-trading simulator for a third-year CSE project. It has an Angular frontend and a Java 21 / Spring Boot REST backend. Trades are simulated only; the app does not connect to a brokerage or place real-money orders.
 
-Core project details:
+Core details:
 
 - Backend package: `com.portfoliopro.backend`
-- Database: `portfolio_pro`
-- REST API prefix: `/api`
-- Health endpoint: `GET /api/health`
+- Backend directory: `portfoliopro-backend/`
+- Frontend directory: `portfolio-frontend/`
+- Database name: `portfolio_pro`
+- REST prefix: `/api`
 - Backend port: `8081`
 - Frontend port: `4200`
-- Backend: `portfoliopro-backend/`
-- Frontend: `portfolio-frontend/`
-- Docker Compose file: `compose.yaml`
+- Docker Compose: `compose.yaml`
 - Git remote: `https://github.com/Gaganarora09/JAVA-FULL-STACK-STOCK-MARKET-PORTFOLIO.git`
 
-## Product features already in the project
+## Stack and architecture
 
-- User registration and login with JWT authentication.
-- Stock catalogue, search, sectors, fundamentals, technical indicators, and price history.
-- Simulated buy/sell trades, holdings, cash balance, trade history, and watchlists.
-- Portfolio analytics, allocation, P/L, risk metrics, and performance chart with week/month/year/all controls.
-- When account history is too short, the performance chart can show explicitly labeled illustrative curves. These are not real past account results.
-- Dashboard labels demo prices as simulated. Do not present them as live data.
-- MySQL profile and Docker Compose setup exist. The default local backend profile is in-memory H2.
+- Frontend: Angular 21 standalone component application, TypeScript, RxJS, template-driven forms.
+- Current frontend shell: most dashboard functionality is in `portfolio-frontend/src/app/app.ts` and `app.html`; `app.routes.ts` currently has no feature routes.
+- Backend: Java 21, Spring Boot 3.2.5, Spring Web, Spring Data JPA, Bean Validation, Spring Security.
+- Auth: BCrypt password hashing, stateless JWT authentication, Angular auth interceptor using `sessionStorage`.
+- Entities: User, Portfolio, Holding, Stock, Trade, WatchlistEntry, StockDailyPrice, PortfolioSnapshot.
+- API responses use DTOs rather than directly exposing JPA entities.
+- Default backend profile: in-memory H2, temporary and reset on restart.
+- Persistent profile: PostgreSQL through `application-postgres.yml`, Flyway migration, and Docker Compose.
+- Obsolete MySQL profile was removed; do not reintroduce MySQL unless explicitly required.
 
-## Real market data work
+## Implemented product functionality
 
-The app has an optional Massive end-of-day data integration. When configured, the backend fetches up to one year of daily bars for the five seeded stocks (AAPL, MSFT, GOOGL, TSLA, JPM), stores closes in the existing stock daily price table, updates the stock's current price, and labels its source. It excludes the still-forming current-day bar. A scheduled refresh is configured on weekdays after the US market close. Prices are end-of-day, not real-time. Fundamentals remain sample data. Trades remain simulated.
+- Registration and login with JWT.
+- BCrypt password hashing and protected user-specific endpoints.
+- User-specific portfolios, holdings, watchlists, and trade history.
+- Simulated buy/sell trades with BigDecimal monetary values.
+- Weighted-average holding cost basis.
+- Realized and unrealized P/L.
+- Pessimistic user row locking during trade execution.
+- Backend trade idempotency via optional UUID `idempotencyKey`.
+- Frontend generates `crypto.randomUUID()` for every submitted trade.
+- Validation for ticker, trade side, positive quantity, maximum quantity, available cash, and available holdings.
+- Portfolio summary, allocation, concentration, volatility, drawdown, and recorded snapshots.
+- Activity area with All/Buys/Sells filters and client-side pagination.
+- Trade activity displays asset, side, shares, execution price, realized P/L, and date.
+- Trade ticket shows selected price, estimated order value, available cash, owned shares, and readiness messages.
+- Buy/Sell buttons are disabled client-side when cash/holding/quantity checks clearly fail; backend remains authoritative.
+- Dashboard performance chart now shows only persisted backend snapshots. Synthetic illustrative curves were removed.
+- Empty performance state clearly explains that history begins after persisted valuations are recorded.
+- Stock catalogue search and watchlist add/remove.
+- Catalogue rows can be selected to update the selected ticker's fundamentals, technical indicators, and price history.
+- Existing stock technical-analysis endpoint is rendered as a daily closing-price history chart with source and dates.
+- Optional Massive end-of-day integration, ticker search, ticker import, refresh status, and demo fallback.
+- Seeded stocks: AAPL, MSFT, GOOGL, TSLA, JPM.
+- Demo market data is explicitly labeled; fundamentals remain sample/demo values.
+- Practice cash endpoint: `POST /api/users/me/demo-funds`.
 
-Relevant endpoints:
+## Important API groups
 
-- Public status: `GET /api/market-data/status`
-- Authenticated manual update: `POST /api/market-data/refresh`
-- Authenticated simulated cash top-up: `POST /api/users/me/demo-funds` (adds $100,000 in practice cash)
+- Auth: `POST /api/auth/register`, `POST /api/auth/login`
+- Health: `GET /api/health`
+- Stocks: `/api/stocks`, `/api/stocks/search`, `/api/stocks/{ticker}`, fundamentals, technical analysis, import
+- Market data: `GET /api/market-data/status`, `POST /api/market-data/refresh`
+- User: `GET /api/users/me`, `POST /api/users/me/demo-funds`
+- Portfolio: `GET /api/portfolio/me`, `/analytics`, `/performance`
+- Trades: `POST /api/trades`, `GET /api/trades`
+- Watchlist: `GET /api/watchlist`, `POST /api/watchlist/{ticker}`, `DELETE /api/watchlist/{ticker}`
 
-To enable Massive, copy `.env.example` to `.env`, set `MASSIVE_API_KEY` in `.env`, and restart the backend/Compose services. Never put the key in source control or in this context file. Without the key, demo prices continue to be used.
+## Persistence status
 
-## Current state as of 2026-09-30
+- `compose.yaml` now starts PostgreSQL 17 on `127.0.0.1:5432` and persists data in Docker volume `portfolio_pro_postgres`.
+- Compose backend uses `SPRING_PROFILES_ACTIVE=postgres` and waits for the PostgreSQL health check.
+- `application-postgres.yml` enables Flyway, validates the schema with Hibernate `ddl-auto: validate`, uses UTC Hibernate JDBC timezone, validates migrations, and disables Flyway clean.
+- Migration: `portfoliopro-backend/src/main/resources/db/migration/V1__create_portfolio_schema.sql`.
+- Default H2 profile explicitly disables Flyway and uses `ddl-auto: update` for quick local/test startup.
+- Docker Desktop/PostgreSQL was unavailable during the latest work. Persistent mode has not been runtime-verified here.
+- Do not rely on the currently running H2 account across a backend restart; it will be erased.
 
-- The user reported they could not buy a stock. Their screenshot showed a `$0.00` balance and no positions. A $0 cash balance causes the simulated buy endpoint to reject a purchase.
-- The user approved restarting the backend, including the acknowledged reset of its in-memory H2 database. The old account/trade data in that H2 instance was therefore cleared. The user must register a new account in the app; new accounts are initialized with $100,000 practice cash.
-- Added an “Add $100,000 practice cash” button when cash is below $1,000, backed by `POST /api/users/me/demo-funds`.
-- Added clearer messaging for insufficient funds and a frontend path back to login when the old in-memory account no longer exists.
-- Rebuilt the backend jar and started it as a hidden Java 21 process on port 8081 (PID was 23672 at the time of restart; confirm before managing the process).
-- Backend health responded `UP`; `/api/market-data/status` responded successfully and said `configured: false` because no provider key is configured.
-- `GET /api/stocks` returned the five seeded symbols with `priceType: SIMULATED_DEMO` and `currentPrice` fields.
-- Angular dev server on port 4200 responded HTTP 200. The user should refresh the browser and register a new account before testing a buy.
-- Backend Java compilation/package and Angular production builds succeeded. Tests were not run.
-- Docker Desktop/MySQL was unavailable during earlier work; current running backend uses H2 memory storage. Restarting it again clears its account data. Switch to persistent MySQL before relying on account data across restarts.
-- Recent code changes are not committed/pushed yet. Earlier project work had been pushed to GitHub in commit `9918c82ae8fe3b9b44a11f37e3e264bf13ef70e4`; check Git status before making a new commit.
-- Docker Desktop/MySQL remains unavailable; ports 8081 and 4200 are running, while MySQL port 3306 is not. The existing Compose setup still persists MySQL data in `portfolio_pro_mysql` once Docker is available.
-- Massive key was provided by the user and saved only in ignored local `.env`. The live backend reports configured=true. Public search for `NVDA` returned Nvidia Corp from Massive, filtered to common stocks. The authenticated manual price refresh endpoint has not yet been run.
-- Dynamic Massive ticker search and stock import are active in the running backend. Adding a result imports up to one year of EOD bars and makes the ticker available in the catalogue for watchlist and simulated trades. The user approved the backend restart and H2 reset; register a new account to use authenticated features. H2 remains in-memory, so another restart clears user and trade data.
-- Angular production build and direct Java compilation succeeded; the staged Spring Boot jar is running. Tests were not run. The source changes and this context file were pushed to `main` in commit `dd9d39f` (follow-up context correction committed separately).
+## Current runtime and validation state as of 2026-10-01
 
-## First steps next time
+- Frontend was confirmed responsive at `http://localhost:4200` with HTTP 200.
+- Backend was confirmed healthy at `http://localhost:8081/api/health` with `{"status":"UP","service":"portfoliopro-backend"}`.
+- The user viewed the updated dashboard and Activity section in the browser. The screen showed persisted account data, a holding, five trade rows, and All/Buys/Sells controls.
+- Angular production builds passed after the latest changes with no warnings.
+- `git diff --check` passed during the latest work.
+- Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
+- Docker/PostgreSQL integration was not run because Docker is unavailable.
+- The worktree contains uncommitted changes from the persistence, trading, frontend dashboard, migration, and documentation work. Check `git status` before editing; do not discard unrelated changes.
 
-1. Read this context and check `git status` before editing.
-2. Check whether the frontend/backend are already running before restarting either one.
-3. Ask whether a Massive API key has been added to `.env` only if live prices are the immediate goal; the key itself should not be shared in chat.
-4. Have the user refresh `http://localhost:4200`, register again after the H2 reset, and test a one-share simulated buy. If the browser still shows an old view, hard-refresh it.
-5. Prioritize making MySQL persistence easy to run so future backend restarts do not clear users, holdings, and trades.
+## Remaining gaps / next recommended work
 
-## Working preferences from the conversation
+1. Add separate Angular routes/components for Overview, Holdings, Watchlist, Activity, Performance, and Stock Detail; currently these are dashboard sections in one component.
+2. Add a dedicated stock-detail/research page with exchange/company metadata where supported.
+3. Add backend unit tests for TradeService, cost basis, realized P/L, analytics formulas, and market-data provider fallback.
+4. Add frontend tests for trade readiness, idempotency payloads, activity filtering/pagination, and performance empty states.
+5. Run Maven tests and PostgreSQL Compose verification once Maven/Docker are available.
+6. Verify Flyway V1 against a fresh PostgreSQL database and fix any dialect/schema mismatch discovered at startup.
+7. Improve trade-history API with server-side pagination if the dataset grows; current activity pagination is client-side over the returned list.
+8. Consider a provider abstraction separating Massive and demo market-data implementations.
+9. Add OpenAPI/Swagger if it can be introduced without unnecessary dependency complexity.
+10. Commit the accumulated changes only after reviewing the complete diff and running available validation.
 
-- The user wants the project built through to usable, connected features and gets frustrated by stopping after small edits.
+## First steps in the next session
+
+1. Read this file and run `git status --short`.
+2. Check ports 4200 and 8081 before restarting anything.
+3. Do not restart the H2 backend if the current local account/trades need to be preserved.
+4. If persistence is the next priority, start Docker Desktop and run `docker compose up --build`; verify `/api/health`, registration, trade persistence, and restart behavior.
+5. Otherwise continue with routed Angular feature components and tests, preserving the existing visual design.
+6. Never request or record the Massive API key in chat or this file; use the ignored local `.env` only.
+
+## Working preferences
+
 - Continue with concrete implementation and verification rather than repeatedly asking whether to proceed.
-- Ask only for genuinely required external input (for example a provider API key); instruct the user to place secrets in local environment configuration instead of chat.
+- Preserve working functionality and the existing visual identity.
+- Explain important architectural and algorithmic decisions in straightforward language suitable for a third-year CSE student.
+- Ask the user only for genuinely required external input, such as starting Docker or providing a local environment value without sharing the secret itself.

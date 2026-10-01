@@ -33,6 +33,11 @@ spring:
       hibernate:
         format_sql: true
 
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+
 logging:
   level:
     com.portfoliopro: DEBUG

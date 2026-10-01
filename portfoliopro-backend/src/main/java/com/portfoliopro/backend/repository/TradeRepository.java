@@ -8,4 +8,5 @@ import java.util.List;
 public interface TradeRepository extends JpaRepository<Trade, Long> {
     List<Trade> findByUserIdOrderByExecutedAtDesc(Long userId);
     List<Trade> findByUserIdAndType(Long userId, Trade.TradeType type);
+    java.util.Optional<Trade> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
 }
