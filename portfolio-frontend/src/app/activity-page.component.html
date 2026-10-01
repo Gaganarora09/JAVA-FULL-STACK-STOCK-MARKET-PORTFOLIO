@@ -1,0 +1,24 @@
+<section class="card activity-card">
+  <div class="section-heading activity-heading"><div><span class="eyebrow">RECENT ORDERS</span><h2>Trade activity</h2></div><div class="activity-tools"><div class="activity-filters" aria-label="Trade activity filter"><button type="button" [class.selected]="activityFilter === 'ALL'" (click)="setActivityFilter('ALL')">All</button><button type="button" [class.selected]="activityFilter === 'BUY'" (click)="setActivityFilter('BUY')">Buys</button><button type="button" [class.selected]="activityFilter === 'SELL'" (click)="setActivityFilter('SELL')">Sells</button></div><span class="activity-count">{{ trades().length }} trades</span></div></div>
+  @if (filteredTrades.length) {
+    <div class="table-scroll"><table class="activity-table"><thead><tr><th>DATE</th><th>ASSET</th><th>TYPE</th><th>SHARES</th><th>PRICE</th><th>REALIZED P/L</th></tr></thead><tbody>
+      @for (trade of filteredTrades; track trade.id) {
+        <tr>
+          <td>{{ trade.executedAt | date:'MMM d, y' }}</td>
+          <td><strong>{{ trade.ticker }}</strong></td>
+          <td><span class="trade-type" [class.sell-type]="trade.type === 'SELL'">{{ trade.type }}</span></td>
+          <td>{{ trade.quantity }}</td>
+          <td>{{ money(trade.priceAtExecution) }}</td>
+          <td [class.positive-text]="trade.realizedGainLoss >= 0" [class.negative-text]="trade.realizedGainLoss < 0">{{ trade.realizedGainLoss >= 0 ? '+' : '' }}{{ money(trade.realizedGainLoss) }}</td>
+        </tr>
+      }
+    </tbody></table></div>
+    <div class="dashboard-footer">
+      <button type="button" class="text-link" (click)="changeActivityPage(-1)" [disabled]="activityPage === 1">Previous</button>
+      <span>Page {{ activityPage }} / {{ activityTotalPages }}</span>
+      <button type="button" class="text-link" (click)="changeActivityPage(1)" [disabled]="activityPage >= activityTotalPages">Next</button>
+    </div>
+  } @else {
+    <div class="empty-state"><span class="empty-symbol">↗</span><strong>No trade activity yet</strong><p>Executed and simulated trades will show up here.</p></div>
+  }
+</section>

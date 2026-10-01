@@ -1,19 +1,34 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { TOKEN_KEY } from './auth.interceptor';
-import { MarketDataStatus, PortfolioAnalytics, PortfolioApi, PortfolioPerformancePoint, PortfolioSummary, Stock, StockSearchResult, StockFundamentals, StockTechnicalAnalysis, Trade, UserProfile, WatchlistItem } from './portfolio-api.service';
+import {
+  MarketDataStatus,
+  PortfolioAnalytics,
+  PortfolioApi,
+  PortfolioPerformancePoint,
+  PortfolioSummary,
+  Stock,
+  StockFundamentals,
+  StockSearchResult,
+  StockTechnicalAnalysis,
+  Trade,
+  UserProfile,
+  WatchlistItem,
+} from './portfolio-api.service';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
   private readonly api = inject(PortfolioApi);
+  private readonly router = inject(Router);
 
   readonly authenticated = signal(false);
   readonly registering = signal(false);
@@ -336,6 +351,7 @@ export class App implements OnInit {
   private setPerformanceData(recorded: PortfolioPerformancePoint[]): void {
     this.performance.set(recorded);
   }
+
   performanceChange(): number {
     const points = this.performance();
     if (points.length < 2 || points[0].totalValue === 0) return 0;
@@ -371,6 +387,7 @@ export class App implements OnInit {
   selectStock(ticker: string): void {
     this.ticker = ticker;
     this.loadStockAnalysis(ticker);
+    this.router.navigate(['/stock', ticker]);
   }
 
   loadStockAnalysis(ticker: string): void {

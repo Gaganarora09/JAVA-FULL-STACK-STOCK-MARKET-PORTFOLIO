@@ -84,6 +84,7 @@ Core details:
 - Backend was confirmed healthy at `http://localhost:8081/api/health` with `{"status":"UP","service":"portfoliopro-backend"}`.
 - The user viewed the updated dashboard and Activity section in the browser. The screen showed persisted account data, a holding, five trade rows, and All/Buys/Sells controls.
 - Angular production builds passed after the latest changes with no warnings.
+- Added Angular route definitions for the dashboard views (`/overview`, `/holdings`, `/watchlist`, `/activity`, `/performance`, `/stock/:ticker`), split the dashboard into routed page components, and kept the sidebar navigation working through Angular router links while preserving the existing dashboard functionality.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.

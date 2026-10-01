@@ -1,0 +1,70 @@
+<section class="overview-grid">
+  <article class="card balance-card">
+    <div class="card-heading"><span class="eyebrow">TOTAL PORTFOLIO VALUE</span><span class="live-tag"><i></i> {{ hasRealMarketData ? 'EOD PRICES · ' + (marketDataStatus()?.lastSuccessfulRefresh | date:'short') : 'DEMO PRICES' }}</span></div>
+    <div class="balance-value">{{ money(summary()?.totalAccountValue) }}</div>
+    <div class="balance-meta"><span class="gain-chip" [class.negative]="(analytics()?.totalGainLoss ?? 0) < 0">{{ (analytics()?.totalGainLoss ?? 0) >= 0 ? '↗' : '↘' }} {{ money(analytics()?.totalGainLoss) }} total P/L</span><span class="value-caption">Cash + investments</span></div>
+    <div class="balance-divider"></div>
+    <div class="mini-metrics">
+      <div><span>Cash available</span><strong>{{ money(summary()?.cashBalance) }}</strong>@if ((summary()?.cashBalance ?? 0) < 1000) { <button class="text-link" type="button" (click)="addPracticeFunds()" [disabled]="busy()">Add $100,000 practice cash</button> }</div>
+      <div><span>Invested value</span><strong>{{ money(summary()?.totalMarketValue) }}</strong></div>
+      <div><span>Unrealized P/L</span><strong [class.positive-text]="(summary()?.totalUnrealizedGainLoss ?? 0) >= 0">{{ money(summary()?.totalUnrealizedGainLoss) }}</strong></div>
+    </div>
+  </article>
+
+  <article class="card allocation-card">
+    <div class="section-heading"><div><span class="eyebrow">PORTFOLIO MIX</span><h2>Allocation</h2></div><span class="more-icon">•••</span></div>
+    <div class="allocation-content">
+      <div class="donut" [style.background]="allocationStyle()"><div class="donut-center"><strong>{{ analytics()?.holdings?.length ?? 0 }}</strong><span>positions</span></div></div>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-dot cash-dot"></span><span>Cash</span><strong>{{ analytics()?.cashAllocationPercent ?? 0 }}%</strong></div>
+        @for (sector of analytics()?.sectors ?? []; track sector.sector; let index = $index) {
+          <div class="legend-row"><span class="legend-dot" [class]="'sector-dot dot-' + (index % 6)"></span><span>{{ sector.sector }}</span><strong>{{ sector.allocationPercent }}%</strong></div>
+        }
+        @if (!(analytics()?.sectors?.length)) { <p class="empty-small">Your stock allocation will appear after your first trade.</p> }
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="market-analysis-grid">
+  <article class="card market-fundamentals">
+    <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2></div><span class="trade-note">Demo values</span></div>
+    <div class="fundamental-metrics">
+      <div><span>EPS</span><strong>{{ fundamentals()?.earningsPerShare == null ? '—' : money(fundamentals()?.earningsPerShare) }}</strong></div>
+      <div><span>P / E</span><strong>{{ fundamentals()?.priceToEarnings ?? '—' }}</strong></div>
+      <div><span>Market cap</span><strong>{{ compactMoney(fundamentals()?.marketCapitalization) }}</strong></div>
+      <div><span>Dividend yield</span><strong>{{ fundamentals()?.dividendYield == null ? '—' : (fundamentals()!.dividendYield! * 100 | number:'1.2-2') + '%' }}</strong></div>
+    </div>
+  </article>
+
+  <article class="card market-technical">
+    <div class="section-heading"><div><span class="eyebrow">{{ marketPriceLabel }}</span><h2>{{ technicalAnalysis()?.ticker ?? ticker }} indicators</h2></div><span class="trade-note">Daily closing prices</span></div>
+    <div class="technical-metrics">
+      <div><span>Last close</span><strong>{{ money(technicalAnalysis()?.latestClose) }}</strong></div>
+      <div><span>SMA 20</span><strong>{{ technicalAnalysis()?.sma20 == null ? '—' : money(technicalAnalysis()?.sma20) }}</strong></div>
+      <div><span>RSI 14</span><strong>{{ technicalAnalysis()?.rsi14 ?? '—' }}</strong></div>
+    </div>
+    @if (technicalAnalysis()?.history?.length) {
+      <div class="technical-history">
+        <div class="technical-history-heading"><span>PRICE HISTORY - {{ technicalAnalysis()!.history.length }} DAYS</span><span>{{ technicalAnalysis()!.dataSource }}</span></div>
+        <svg viewBox="0 0 400 92" role="img" [attr.aria-label]="technicalAnalysis()!.ticker + ' daily closing price history'">
+          <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" /><line x1="8" y1="46" x2="392" y2="46" class="chart-axis" /><line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
+          <polyline [attr.points]="technicalHistoryLine()" class="technical-history-line" />
+        </svg>
+        <div class="technical-history-endpoints"><span>{{ technicalAnalysis()!.history[0].date | date:'MMM d' }}</span><span>Latest {{ technicalAnalysis()!.history[technicalAnalysis()!.history.length - 1].date | date:'MMM d, y' }}</span></div>
+      </div>
+    } @else { <div class="technical-history-empty">No daily price history is available for this stock yet.</div> }
+    <p class="risk-caption">{{ hasRealMarketData ? 'End-of-day market prices; prices may be delayed and are not a market signal.' : 'Generated sample data for API demonstration; not a market signal.' }}</p>
+  </article>
+</section>
+
+<section class="card trade-card">
+  <div class="section-heading"><div><span class="eyebrow">SIMULATED TRADING</span><h2>Make a trade</h2></div><span class="trade-note">No real money involved</span></div>
+  <div class="trade-form">
+    <label>Stock<select name="ticker" [(ngModel)]="ticker" (ngModelChange)="loadStockAnalysis($event)"><option value="" disabled>Select a stock</option>@for (stock of stocks(); track stock.ticker) { <option [value]="stock.ticker">{{ stock.ticker }} · {{ stock.companyName }}</option> }</select></label>
+    <label>Quantity<input name="quantity" [(ngModel)]="quantity" type="number" min="1" step="1" /></label>
+    <div class="trade-price"><span>{{ selectedStock?.priceType === 'MASSIVE_EOD' ? 'Last close' : 'Demo price' }}</span><strong>{{ money(selectedStock?.currentPrice) }}</strong><small>Order value: {{ money(estimatedOrderValue) }}</small><small>Cash: {{ money(summary()?.cashBalance) }} · Owned: {{ selectedHoldingQuantity }}</small></div>
+    <div class="trade-buttons"><button class="button buy-button" type="button" (click)="placeTrade('BUY')" [disabled]="busy() || !canBuy">Buy</button><button class="button sell-button" type="button" (click)="placeTrade('SELL')" [disabled]="busy() || !canSell">Sell</button></div>
+    <p class="trade-readiness" [class.trade-warning]="!canBuy || !canSell">{{ tradeReadinessMessage }}</p>
+  </div>
+</section>

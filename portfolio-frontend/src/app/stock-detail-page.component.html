@@ -1,0 +1,33 @@
+<section class="card trade-card">
+  <div class="section-heading"><div><span class="eyebrow">STOCK DETAIL</span><h2>{{ ticker || 'Select ticker' }}</h2></div><div class="trade-buttons"><a class="button sell-button" routerLink="/overview">Back to overview</a></div><span class="trade-note">{{ hasRealMarketData ? 'Real EOD market data' : 'Demo values' }}</span></div>
+  <div class="market-analysis-grid">
+    <article class="card market-fundamentals">
+      <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2></div></div>
+      <div class="fundamental-metrics">
+        <div><span>EPS</span><strong>{{ fundamentals()?.earningsPerShare == null ? '—' : money(fundamentals()?.earningsPerShare) }}</strong></div>
+        <div><span>P / E</span><strong>{{ fundamentals()?.priceToEarnings ?? '—' }}</strong></div>
+        <div><span>Market cap</span><strong>{{ compactMoney(fundamentals()?.marketCapitalization) }}</strong></div>
+        <div><span>Dividend yield</span><strong>{{ fundamentals()?.dividendYield == null ? '—' : (fundamentals()!.dividendYield! * 100 | number:'1.2-2') + '%' }}</strong></div>
+      </div>
+    </article>
+
+    <article class="card market-technical">
+      <div class="section-heading"><div><span class="eyebrow">{{ marketPriceLabel }}</span><h2>{{ technicalAnalysis()?.ticker ?? ticker }} indicators</h2></div></div>
+      <div class="technical-metrics">
+        <div><span>Last close</span><strong>{{ money(technicalAnalysis()?.latestClose) }}</strong></div>
+        <div><span>SMA 20</span><strong>{{ technicalAnalysis()?.sma20 == null ? '—' : money(technicalAnalysis()?.sma20) }}</strong></div>
+        <div><span>RSI 14</span><strong>{{ technicalAnalysis()?.rsi14 ?? '—' }}</strong></div>
+      </div>
+      @if (technicalAnalysis()?.history?.length) {
+        <div class="technical-history">
+          <div class="technical-history-heading"><span>PRICE HISTORY - {{ technicalAnalysis()!.history.length }} DAYS</span><span>{{ technicalAnalysis()!.dataSource }}</span></div>
+          <svg viewBox="0 0 400 92" role="img" [attr.aria-label]="technicalAnalysis()!.ticker + ' daily closing price history'">
+            <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" /><line x1="8" y1="46" x2="392" y2="46" class="chart-axis" /><line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
+            <polyline [attr.points]="technicalHistoryLine()" class="technical-history-line" />
+          </svg>
+          <div class="technical-history-endpoints"><span>{{ technicalAnalysis()!.history[0].date | date:'MMM d' }}</span><span>Latest {{ technicalAnalysis()!.history[technicalAnalysis()!.history.length - 1].date | date:'MMM d, y' }}</span></div>
+        </div>
+      } @else { <div class="technical-history-empty">No daily price history is available for this stock yet.</div> }
+    </article>
+  </div>
+</section>

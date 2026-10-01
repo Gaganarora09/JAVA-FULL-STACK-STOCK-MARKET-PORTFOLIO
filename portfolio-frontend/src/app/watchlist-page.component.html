@@ -1,0 +1,25 @@
+<section class="card watch-card">
+  <div class="section-heading"><div><span class="eyebrow">KEEP AN EYE ON</span><h2>Watchlist</h2></div><span class="count-badge">{{ watchlist().length }}</span></div>
+  <div class="watch-items">
+    @for (item of watchlist(); track item.ticker) {
+      <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></span><strong class="watch-price">{{ money(item.currentPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div>
+    }
+    @if (!watchlist().length) { <div class="empty-state compact"><span class="empty-symbol">☆</span><strong>Your watchlist is empty</strong><p>Add a stock from the catalogue.</p></div> }
+  </div>
+  <div class="catalogue">
+    <div class="catalogue-title"><strong>Stock catalogue</strong><small>{{ marketPriceLabel }} @if (marketDataStatus()?.lastSuccessfulRefresh) { · updated {{ marketDataStatus()!.lastSuccessfulRefresh | date:'short' }} }</small></div>
+    <button class="text-link" type="button" (click)="refreshMarketData()" [disabled]="busy()">Refresh real stock prices</button>
+    <input class="catalogue-search" type="search" placeholder="Search ticker or company (Massive stock directory)" [value]="stockQuery" (input)="searchCatalogue($any($event.target).value)" />
+    @for (stock of catalogueStocks(); track stock.ticker) {
+      <div class="catalogue-row" [class.selected-catalogue-row]="ticker === stock.ticker" (click)="selectStock(stock.ticker)" role="button" tabindex="0" (keydown.enter)="selectStock(stock.ticker)">
+        <span><strong>{{ stock.ticker }}</strong><small>{{ stock.companyName }}@if (stock.primaryExchange) { · {{ stock.primaryExchange }} }</small></span>
+        <strong>{{ stock.inCatalogue ? money(stock.currentPrice) : 'Add for EOD price' }}</strong>
+        @if (stock.inCatalogue) {
+          <button type="button" class="add-watch" (click)="$event.stopPropagation(); addToWatchlist(stock)" [disabled]="watchlist().some(item => item.ticker === stock.ticker)" [attr.aria-label]="'Add ' + stock.ticker + ' to watchlist'">{{ watchlist().some(item => item.ticker === stock.ticker) ? '✓' : '+' }}</button>
+        } @else {
+          <button type="button" class="add-watch" (click)="$event.stopPropagation(); importStock(stock)" [disabled]="busy()" [attr.aria-label]="'Add ' + stock.ticker + ' to stock catalogue'">Add</button>
+        }
+      </div>
+    }
+  </div>
+</section>

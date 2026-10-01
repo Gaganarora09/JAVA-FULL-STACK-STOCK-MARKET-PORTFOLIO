@@ -1,0 +1,37 @@
+<section class="performance-grid">
+  <article class="card performance-card">
+    <div class="section-heading performance-heading">
+      <div><span class="eyebrow">ACCOUNT HISTORY</span><h2>Portfolio performance</h2></div>
+      <div class="range-buttons" aria-label="Performance time range">
+        <button type="button" [class.selected]="performanceRange() === 'week'" (click)="setPerformanceRange('week')">1W</button>
+        <button type="button" [class.selected]="performanceRange() === 'month'" (click)="setPerformanceRange('month')">1M</button>
+        <button type="button" [class.selected]="performanceRange() === 'year'" (click)="setPerformanceRange('year')">1Y</button>
+        <button type="button" [class.selected]="performanceRange() === 'all'" (click)="setPerformanceRange('all')">ALL</button>
+      </div>
+    </div>
+    @if (performance().length) {
+      <div class="performance-chart">
+        <svg viewBox="0 0 400 92" role="img" aria-label="Portfolio value chart">
+          <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" />
+          <line x1="8" y1="46" x2="392" y2="46" class="chart-axis" />
+          <line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
+          <polyline [attr.points]="performanceLine()" class="performance-line" [class.negative-trend]="performanceChange() < 0" />
+        </svg>
+        <div class="performance-summary" [class.negative-text]="performanceChange() < 0"><strong>{{ performanceChange() >= 0 ? '+' : '' }}{{ money(performanceAmountChange()) }}</strong><span>{{ performanceChange() | number:'1.2-2' }}% over selected period</span></div>
+        <div class="performance-endpoints"><span>{{ performance()[0].date | date:'MMM d, y' }}</span><strong>{{ money(performance()[performance().length - 1].totalValue) }}</strong><span>{{ performance()[performance().length - 1].date | date:'MMM d, y' }}</span></div>
+      </div>
+    } @else {
+      <div class="performance-empty">No persisted snapshots for this range yet. Account history begins when PortfolioPro records your daily valuation.</div>
+    }
+  </article>
+
+  <article class="card risk-card">
+    <div><span class="eyebrow">RISK INDICATORS</span><h2>Portfolio risk</h2></div>
+    <div class="risk-metrics">
+      <div><span>Largest position</span><strong>{{ analytics()?.topHoldingConcentrationPercent ?? 0 }}%</strong><small>{{ analytics()?.concentrationRiskEstimate ?? 'LOW' }} concentration</small></div>
+      <div><span>Daily volatility</span><strong>{{ analytics()?.dailyVolatilityPercent == null ? '—' : analytics()?.dailyVolatilityPercent + '%' }}</strong><small>Unannualized</small></div>
+      <div><span>Max drawdown</span><strong>{{ analytics()?.maxDrawdownPercent == null ? '—' : analytics()?.maxDrawdownPercent + '%' }}</strong><small>Recorded history</small></div>
+    </div>
+    <p class="risk-caption">{{ analytics()?.riskMetricsStatus === 'INSUFFICIENT_HISTORY' ? 'More daily snapshots are needed for volatility and drawdown.' : 'Calculated from simulated daily snapshots; these are not forecasts.' }}</p>
+  </article>
+</section>
