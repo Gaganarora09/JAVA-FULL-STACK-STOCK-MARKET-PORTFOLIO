@@ -88,6 +88,7 @@ Core details:
 - Stock links from holdings and watchlist now open the stock-detail route, the dashboard breadcrumb reflects the active route, and stock route parameters are normalized to uppercase.
 - Stock-detail pages preserve the ticker requested by the route while dashboard data refreshes, including tickers that are not yet in the user's catalogue.
 - Stock-detail analysis clears stale metrics while loading and shows explicit loading/error status when fundamentals or technical history cannot be fetched.
+- Stock-detail analysis errors can be retried inline, and starting a new analysis request clears stale global errors.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.

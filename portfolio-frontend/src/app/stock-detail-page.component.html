@@ -29,7 +29,7 @@
   @if (stockAnalysisLoading()) {
     <div class="stock-analysis-status" role="status">Loading {{ ticker }} analysis…</div>
   } @else if (error() && !fundamentals() && !technicalAnalysis()) {
-    <div class="stock-analysis-status stock-analysis-error" role="alert">Unable to load {{ ticker }} analysis. Use refresh to try again.</div>
+    <div class="stock-analysis-status stock-analysis-error" role="alert">Unable to load {{ ticker }} analysis. <button type="button" class="inline-retry" (click)="loadStockAnalysis(ticker)">Retry</button></div>
   }
 
   <div class="market-analysis-grid">

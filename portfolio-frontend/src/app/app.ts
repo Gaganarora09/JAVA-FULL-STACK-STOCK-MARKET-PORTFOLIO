@@ -429,6 +429,7 @@ export class App implements OnInit {
     const normalizedTicker = ticker.trim().toUpperCase();
     if (!normalizedTicker) return;
     this.ticker = normalizedTicker;
+    this.error.set('');
     this.fundamentals.set(null);
     this.technicalAnalysis.set(null);
     this.stockAnalysisLoading.set(true);
