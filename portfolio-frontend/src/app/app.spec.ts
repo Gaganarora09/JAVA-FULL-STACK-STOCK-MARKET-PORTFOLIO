@@ -5,7 +5,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { PortfolioApi, Trade, WatchlistItem } from './portfolio-api.service';
+import { PortfolioApi, PortfolioPerformancePoint, Trade, WatchlistItem } from './portfolio-api.service';
 
 describe('App', () => {
   const apiStub = {
@@ -15,6 +15,7 @@ describe('App', () => {
     addWatchlist: () => of({}),
     watchlist: (): Observable<WatchlistItem[]> => of([]),
     removeWatchlist: () => of(void 0),
+    performance: (_range: 'week' | 'month' | 'year' | 'all' = 'month'): Observable<PortfolioPerformancePoint[]> => of([]),
   };
 
   beforeEach(async () => {
@@ -146,6 +147,17 @@ describe('App', () => {
     expect(component.activityPage).toBe(1);
     expect(component.filteredTrades).toHaveLength(1);
     expect(component.filteredTrades[0].type).toBe('SELL');
+  });
+
+  it('requests persisted performance data for the selected range', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    const performance = vi.spyOn(apiStub, 'performance');
+
+    component.setPerformanceRange('year');
+
+    expect(component.performanceRange()).toBe('year');
+    expect(performance).toHaveBeenCalledWith('year');
   });
 
   it('derives trade readiness from persisted cash and holdings', () => {
