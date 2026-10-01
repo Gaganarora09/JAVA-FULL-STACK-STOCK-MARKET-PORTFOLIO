@@ -265,6 +265,15 @@ class AuthIntegrationTest {
         assertThat(userRepository.findById(user.getId()).orElseThrow().getCashBalance())
                 .isEqualByComparingTo("99650.0000");
         assertThat(tradeRepository.count()).isEqualTo(3);
+
+        mvc.perform(get("/api/portfolio/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cashBalance").value(99650.00))
+                .andExpect(jsonPath("$.totalMarketValue").value(750.00))
+                .andExpect(jsonPath("$.totalAccountValue").value(100400.00))
+                .andExpect(jsonPath("$.totalUnrealizedGainLoss").value(300.00))
+                .andExpect(jsonPath("$.holdings[0].quantity").value(3))
+                .andExpect(jsonPath("$.holdings[0].averageCostBasis").value(150.0000));
     }
 
     @Test
