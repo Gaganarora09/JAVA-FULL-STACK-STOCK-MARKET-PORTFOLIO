@@ -12,6 +12,7 @@ import { App } from './app';
 })
 export class StockDetailPageComponent extends App implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  protected override preserveTickerSelection = true;
 
   override ngOnInit(): void {
     super.ngOnInit();

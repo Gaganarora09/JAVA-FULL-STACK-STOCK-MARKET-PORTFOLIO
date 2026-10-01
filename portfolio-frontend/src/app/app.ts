@@ -60,6 +60,7 @@ export class App implements OnInit {
   stockQuery = '';
   private catalogueRequest = 0;
   private catalogueSearchTimeout?: ReturnType<typeof setTimeout>;
+  protected preserveTickerSelection = false;
 
   ngOnInit(): void {
     if (sessionStorage.getItem(TOKEN_KEY)) {
@@ -133,7 +134,7 @@ export class App implements OnInit {
         this.trades.set(data.trades);
         this.watchlist.set(data.watchlist);
         this.marketDataStatus.set(data.marketDataStatus);
-        if (!this.stocks().some((stock) => stock.ticker === this.ticker)) {
+        if (!this.preserveTickerSelection && !this.stocks().some((stock) => stock.ticker === this.ticker)) {
           this.ticker = this.stocks()[0]?.ticker ?? '';
         }
         this.loadStockAnalysis(this.ticker);

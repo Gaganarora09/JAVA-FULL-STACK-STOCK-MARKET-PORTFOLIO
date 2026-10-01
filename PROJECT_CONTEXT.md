@@ -86,6 +86,7 @@ Core details:
 - Angular production builds passed after the latest changes with no warnings.
 - Added Angular route definitions for the dashboard views (`/overview`, `/holdings`, `/watchlist`, `/activity`, `/performance`, `/stock/:ticker`), split the dashboard into routed page components, and kept the sidebar navigation working through Angular router links while preserving the existing dashboard functionality.
 - Stock links from holdings and watchlist now open the stock-detail route, the dashboard breadcrumb reflects the active route, and stock route parameters are normalized to uppercase.
+- Stock-detail pages preserve the ticker requested by the route while dashboard data refreshes, including tickers that are not yet in the user's catalogue.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.
