@@ -11,11 +11,15 @@
     </div>
     @if (performance().length) {
       <div class="performance-chart">
-        <svg viewBox="0 0 400 92" role="img" aria-label="Portfolio value chart">
+        <svg viewBox="0 0 400 92" preserveAspectRatio="none" role="img" aria-label="Portfolio value chart">
           <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" />
           <line x1="8" y1="46" x2="392" y2="46" class="chart-axis" />
           <line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
-          <polyline [attr.points]="performanceLine()" class="performance-line" [class.negative-trend]="performanceChange() < 0" />
+          @if (performance().length > 1) {
+            <polyline [attr.points]="performanceLine()" class="performance-line" [class.negative-trend]="performanceChange() < 0" />
+          } @else {
+            <circle cx="200" cy="46" r="4" class="chart-point" />
+          }
         </svg>
         <div class="performance-summary" [class.negative-text]="performanceChange() < 0"><strong>{{ performanceChange() >= 0 ? '+' : '' }}{{ money(performanceAmountChange()) }}</strong><span>{{ performanceChange() | number:'1.2-2' }}% over selected period</span></div>
         <div class="performance-endpoints"><span>{{ performance()[0].date | date:'MMM d, y' }}</span><strong>{{ money(performance()[performance().length - 1].totalValue) }}</strong><span>{{ performance()[performance().length - 1].date | date:'MMM d, y' }}</span></div>

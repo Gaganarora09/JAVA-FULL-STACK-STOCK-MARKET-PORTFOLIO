@@ -83,6 +83,15 @@
 .fundamental-metrics > div, .technical-metrics > div { display: grid; gap: 6px; min-width: 0; }
 .fundamental-metrics span, .technical-metrics span { color: #89968e; font-size: 9px; }
 .fundamental-metrics strong, .technical-metrics strong { overflow: hidden; color: #31463a; font-size: 12px; text-overflow: ellipsis; }
+.technical-history { min-width: 0; margin-top: 16px; }
+.technical-history-heading { display: flex; justify-content: space-between; gap: 12px; color: #89968e; font-size: 8px; letter-spacing: .4px; }
+.technical-history-heading span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.technical-history svg { display: block; width: 100%; height: 92px; margin-top: 7px; overflow: visible; }
+.technical-history-line { fill: none; stroke: #24785e; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.chart-point { fill: #24785e; stroke: #fff; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.technical-history-endpoints { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 5px; color: #94a098; font-size: 8px; line-height: 1.3; }
+.technical-history-endpoints span:last-child { text-align: right; }
+.technical-history-empty { display: grid; min-height: 92px; place-items: center; color: #8f9b93; font-size: 9px; text-align: center; }
 .catalogue-search { width: 100%; height: 32px; margin: 8px 0 5px; padding: 0 9px; border: 1px solid #e2e9e4; border-radius: 6px; color: #30453a; font: inherit; font-size: 9px; }
 .catalogue-search:focus { border-color: #438c6b; outline: 2px solid rgba(67, 140, 107, .12); }
 .performance-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .9fr); gap: 14px; margin-top: 14px; }

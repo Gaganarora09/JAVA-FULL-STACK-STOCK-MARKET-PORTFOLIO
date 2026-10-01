@@ -89,6 +89,7 @@ Core details:
 - Stock-detail pages preserve the ticker requested by the route while dashboard data refreshes, including tickers that are not yet in the user's catalogue.
 - Stock-detail analysis clears stale metrics while loading and shows explicit loading/error status when fundamentals or technical history cannot be fetched.
 - Stock-detail analysis errors can be retried inline, and starting a new analysis request clears stale global errors.
+- Technical-history and performance charts now use responsive SVG sizing, constrained endpoint labels, and visible single-snapshot points without inventing history.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.

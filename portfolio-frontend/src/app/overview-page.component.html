@@ -47,9 +47,13 @@
     @if (technicalAnalysis()?.history?.length) {
       <div class="technical-history">
         <div class="technical-history-heading"><span>PRICE HISTORY - {{ technicalAnalysis()!.history.length }} DAYS</span><span>{{ technicalAnalysis()!.dataSource }}</span></div>
-        <svg viewBox="0 0 400 92" role="img" [attr.aria-label]="technicalAnalysis()!.ticker + ' daily closing price history'">
+        <svg viewBox="0 0 400 92" preserveAspectRatio="none" role="img" [attr.aria-label]="technicalAnalysis()!.ticker + ' daily closing price history'">
           <line x1="8" y1="16" x2="392" y2="16" class="chart-axis" /><line x1="8" y1="46" x2="392" y2="46" class="chart-axis" /><line x1="8" y1="76" x2="392" y2="76" class="chart-axis" />
-          <polyline [attr.points]="technicalHistoryLine()" class="technical-history-line" />
+          @if (technicalAnalysis()!.history.length > 1) {
+            <polyline [attr.points]="technicalHistoryLine()" class="technical-history-line" />
+          } @else {
+            <circle cx="200" cy="46" r="4" class="chart-point" />
+          }
         </svg>
         <div class="technical-history-endpoints"><span>{{ technicalAnalysis()!.history[0].date | date:'MMM d' }}</span><span>Latest {{ technicalAnalysis()!.history[technicalAnalysis()!.history.length - 1].date | date:'MMM d, y' }}</span></div>
       </div>
