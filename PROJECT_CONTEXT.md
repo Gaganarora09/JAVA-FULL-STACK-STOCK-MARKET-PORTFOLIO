@@ -92,6 +92,7 @@ Core details:
 - Technical-history and performance charts now use responsive SVG sizing, constrained endpoint labels, and visible single-snapshot points without inventing history.
 - Backend trade integration coverage now also verifies persisted cash, market value, total account value, unrealized P/L, quantity, and average cost after a buy/sell sequence.
 - Frontend coverage now verifies persisted trade activity filtering and client-side pagination.
+- Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.

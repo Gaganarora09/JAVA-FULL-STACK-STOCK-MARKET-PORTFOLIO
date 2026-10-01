@@ -122,4 +122,45 @@ describe('App', () => {
     expect(component.filteredTrades).toHaveLength(1);
     expect(component.filteredTrades[0].id).toBe(7);
   });
+
+  it('derives trade readiness from persisted cash and holdings', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+
+    component.ticker = 'AAPL';
+    component.quantity = 2;
+    component.stocks.set([{
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      currentPrice: 100,
+      priceType: 'SIMULATED_DEMO',
+      sector: 'Technology',
+      primaryExchange: null,
+      priceUpdatedAt: '2026-10-01T00:00:00Z',
+    }]);
+    component.summary.set({
+      cashBalance: 250,
+      totalMarketValue: 100,
+      totalAccountValue: 350,
+      totalUnrealizedGainLoss: 0,
+      holdings: [{
+        ticker: 'AAPL',
+        companyName: 'Apple Inc.',
+        quantity: 3,
+        averageCostBasis: 90,
+        currentPrice: 100,
+        marketValue: 300,
+        unrealizedGainLoss: 30,
+      }],
+    });
+
+    expect(component.estimatedOrderValue).toBe(200);
+    expect(component.canBuy).toBe(true);
+    expect(component.canSell).toBe(true);
+
+    component.quantity = 4;
+
+    expect(component.canBuy).toBe(false);
+    expect(component.canSell).toBe(false);
+  });
 });
