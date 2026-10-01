@@ -1,17 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { PortfolioApi, Trade } from './portfolio-api.service';
+import { PortfolioApi, Trade, WatchlistItem } from './portfolio-api.service';
 
 describe('App', () => {
   const apiStub = {
     stocks: () => of([]),
     fundamentals: () => of(null),
     technicalAnalysis: () => of(null),
+    addWatchlist: () => of({}),
+    watchlist: (): Observable<WatchlistItem[]> => of([]),
+    removeWatchlist: () => of(void 0),
   };
 
   beforeEach(async () => {
@@ -162,5 +165,37 @@ describe('App', () => {
 
     expect(component.canBuy).toBe(false);
     expect(component.canSell).toBe(false);
+  });
+
+  it('refreshes watchlist state after add and remove API calls', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    const stock = {
+      ticker: 'aapl',
+      companyName: 'Apple Inc.',
+      currentPrice: 100,
+      priceType: 'SIMULATED_DEMO',
+      sector: 'Technology',
+      priceUpdatedAt: null,
+      inCatalogue: true,
+      primaryExchange: null,
+    };
+    const watchlistResponse = [{
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      sector: 'Technology',
+      currentPrice: 100,
+      priceUpdatedAt: '2026-10-01T00:00:00Z',
+      addedAt: '2026-10-01T00:00:00Z',
+    }];
+    vi.spyOn(apiStub, 'watchlist').mockReturnValue(of(watchlistResponse));
+    component.addToWatchlist(stock);
+
+    expect(component.watchlist()).toEqual(watchlistResponse);
+    expect(component.notice()).toContain('aapl added');
+
+    component.removeFromWatchlist(watchlistResponse[0]);
+
+    expect(component.watchlist()).toEqual([]);
   });
 });
