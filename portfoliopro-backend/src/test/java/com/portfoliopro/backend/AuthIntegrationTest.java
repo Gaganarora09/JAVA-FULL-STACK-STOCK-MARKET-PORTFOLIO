@@ -9,6 +9,7 @@ import com.portfoliopro.backend.repository.TradeRepository;
 import com.portfoliopro.backend.repository.WatchlistRepository;
 import com.portfoliopro.backend.repository.UserRepository;
 import com.portfoliopro.backend.repository.StockRepository;
+import com.portfoliopro.backend.repository.PortfolioSnapshotRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,7 @@ class AuthIntegrationTest {
     @Autowired TradeRepository tradeRepository;
     @Autowired WatchlistRepository watchlistRepository;
     @Autowired StockRepository stockRepository;
+    @Autowired PortfolioSnapshotRepository portfolioSnapshotRepository;
 
     @BeforeEach
     void cleanUsers() {
@@ -271,6 +273,9 @@ class AuthIntegrationTest {
         assertThat(userRepository.findById(user.getId()).orElseThrow().getCashBalance())
                 .isEqualByComparingTo("99650.0000");
         assertThat(tradeRepository.count()).isEqualTo(3);
+        var snapshot = portfolioSnapshotRepository.findByUserIdAndValuationDate(
+                user.getId(), java.time.LocalDate.now(java.time.ZoneOffset.UTC)).orElseThrow();
+        assertThat(snapshot.getInvestedValue()).isEqualByComparingTo("750.0000");
 
         mvc.perform(get("/api/portfolio/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())

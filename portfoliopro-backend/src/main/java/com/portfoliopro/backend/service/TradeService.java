@@ -92,6 +92,7 @@ public class TradeService {
             holding.setStock(stock);
             holding.setQuantity(quantity);
             holding.setAverageCostBasis(price);
+            portfolio.getHoldings().add(holding);
         } else {
             // Weighted average cost basis
             BigDecimal existingTotalCost = holding.getAverageCostBasis()
@@ -128,6 +129,7 @@ public class TradeService {
 
         int remaining = holding.getQuantity() - quantity;
         if (remaining == 0) {
+            portfolio.getHoldings().remove(holding);
             holdingRepository.delete(holding);
         } else {
             holding.setQuantity(remaining);

@@ -91,6 +91,7 @@ Core details:
 - Stock-detail analysis errors can be retried inline, and starting a new analysis request clears stale global errors.
 - Technical-history and performance charts now use responsive SVG sizing, constrained endpoint labels, and visible single-snapshot points without inventing history.
 - Backend trade integration coverage now also verifies persisted cash, market value, total account value, unrealized P/L, quantity, and average cost after a buy/sell sequence.
+- Trade execution keeps the in-memory portfolio holding collection synchronized when creating or removing a position, so same-transaction snapshot capture includes the correct holdings.
 - Frontend coverage now verifies persisted trade activity filtering and client-side pagination.
 - Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - `git diff --check` passed during the latest work.
