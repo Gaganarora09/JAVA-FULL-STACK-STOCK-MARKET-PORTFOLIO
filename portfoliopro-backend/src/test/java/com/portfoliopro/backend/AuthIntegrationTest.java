@@ -293,6 +293,20 @@ class AuthIntegrationTest {
                 .andExpect(jsonPath("$.totalUnrealizedGainLoss").value(300.00))
                 .andExpect(jsonPath("$.holdings[0].quantity").value(3))
                 .andExpect(jsonPath("$.holdings[0].averageCostBasis").value(150.0000));
+
+        mvc.perform(post("/api/trades")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ticker\":\"AAPL\",\"type\":\"SELL\",\"quantity\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realizedGainLoss").value(300.00));
+
+        assertThat(holdingRepository.findByPortfolioIdAndStockId(portfolio.getId(), stock.getId())).isEmpty();
+        assertThat(userRepository.findById(user.getId()).orElseThrow().getCashBalance())
+                .isEqualByComparingTo("100400.0000");
+        assertThat(portfolioSnapshotRepository.findByUserIdAndValuationDate(
+                user.getId(), java.time.LocalDate.now(java.time.ZoneOffset.UTC)).orElseThrow()
+                .getInvestedValue()).isEqualByComparingTo("0.0000");
     }
 
     @Test
