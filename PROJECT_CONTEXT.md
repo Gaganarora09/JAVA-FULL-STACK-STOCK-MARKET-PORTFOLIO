@@ -21,7 +21,7 @@ Core details:
 ## Stack and architecture
 
 - Frontend: Angular 21 standalone component application, TypeScript, RxJS, template-driven forms.
-- Current frontend shell: most dashboard functionality is in `portfolio-frontend/src/app/app.ts` and `app.html`; `app.routes.ts` currently has no feature routes.
+- Current frontend shell: shared dashboard state remains in `portfolio-frontend/src/app/app.ts` and `app.html`, with routed page components defined in `app.routes.ts`.
 - Backend: Java 21, Spring Boot 3.2.5, Spring Web, Spring Data JPA, Bean Validation, Spring Security.
 - Auth: BCrypt password hashing, stateless JWT authentication, Angular auth interceptor using `sessionStorage`.
 - Entities: User, Portfolio, Holding, Stock, Trade, WatchlistEntry, StockDailyPrice, PortfolioSnapshot.
@@ -85,6 +85,7 @@ Core details:
 - The user viewed the updated dashboard and Activity section in the browser. The screen showed persisted account data, a holding, five trade rows, and All/Buys/Sells controls.
 - Angular production builds passed after the latest changes with no warnings.
 - Added Angular route definitions for the dashboard views (`/overview`, `/holdings`, `/watchlist`, `/activity`, `/performance`, `/stock/:ticker`), split the dashboard into routed page components, and kept the sidebar navigation working through Angular router links while preserving the existing dashboard functionality.
+- Stock links from holdings and watchlist now open the stock-detail route, the dashboard breadcrumb reflects the active route, and stock route parameters are normalized to uppercase.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.
@@ -92,8 +93,8 @@ Core details:
 
 ## Remaining gaps / next recommended work
 
-1. Add separate Angular routes/components for Overview, Holdings, Watchlist, Activity, Performance, and Stock Detail; currently these are dashboard sections in one component.
-2. Add a dedicated stock-detail/research page with exchange/company metadata where supported.
+1. Refactor routed pages away from inheriting the full `App` shell into cleaner shared state/services when the feature set stabilizes.
+2. Expand the stock-detail/research page with additional exchange/company metadata where supported.
 3. Add backend unit tests for TradeService, cost basis, realized P/L, analytics formulas, and market-data provider fallback.
 4. Add frontend tests for trade readiness, idempotency payloads, activity filtering/pagination, and performance empty states.
 5. Run Maven tests and PostgreSQL Compose verification once Maven/Docker are available.
