@@ -107,6 +107,11 @@ export class App implements OnInit {
     this.performance.set([]);
     this.trades.set([]);
     this.watchlist.set([]);
+    this.fundamentals.set(null);
+    this.technicalAnalysis.set(null);
+    this.marketDataStatus.set(null);
+    this.notice.set('');
+    this.error.set('');
     this.password = '';
     this.loadStocks();
   }

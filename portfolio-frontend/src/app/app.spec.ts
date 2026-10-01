@@ -60,4 +60,37 @@ describe('App', () => {
 
     expect(fixture.componentInstance.currentSection).toBe('Performance');
   });
+
+  it('clears private stock analysis when logging out', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+
+    component.fundamentals.set({
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      simulatedPrice: 180,
+      earningsPerShare: 6,
+      priceToEarnings: 30,
+      marketCapitalization: 2_000_000_000,
+      dividendYield: 0.005,
+      dataSource: 'demo',
+      updatedAt: '2026-10-01T00:00:00Z',
+    });
+    component.technicalAnalysis.set({
+      ticker: 'AAPL',
+      periodDays: 30,
+      latestClose: 180,
+      sma20: 178,
+      rsi14: 52,
+      dataSource: 'demo',
+      history: [],
+    });
+
+    component.logout();
+
+    expect(component.fundamentals()).toBeNull();
+    expect(component.technicalAnalysis()).toBeNull();
+    expect(component.notice()).toBe('');
+    expect(component.error()).toBe('');
+  });
 });
