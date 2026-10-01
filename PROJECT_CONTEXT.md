@@ -83,7 +83,7 @@ Core details:
 - Frontend was confirmed responsive at `http://localhost:4200` with HTTP 200.
 - Backend was confirmed healthy at `http://localhost:8081/api/health` with `{"status":"UP","service":"portfoliopro-backend"}`.
 - The user viewed the updated dashboard and Activity section in the browser. The screen showed persisted account data, a holding, five trade rows, and All/Buys/Sells controls.
-- Angular production builds passed after the latest changes with no warnings.
+- Angular production builds pass; the current build reports non-blocking initial bundle and stylesheet budget warnings.
 - Added Angular route definitions for the dashboard views (`/overview`, `/holdings`, `/watchlist`, `/activity`, `/performance`, `/stock/:ticker`), split the dashboard into routed page components, and kept the sidebar navigation working through Angular router links while preserving the existing dashboard functionality.
 - Stock links from holdings and watchlist now open the stock-detail route, the dashboard breadcrumb reflects the active route, and stock route parameters are normalized to uppercase.
 - Stock-detail pages preserve the ticker requested by the route while dashboard data refreshes, including tickers that are not yet in the user's catalogue.
@@ -99,10 +99,13 @@ Core details:
 - Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - Frontend coverage now verifies watchlist state refreshes after successful add/remove API operations.
 - Watchlist add now surfaces errors from the follow-up persisted-list refresh instead of silently leaving stale state.
+- Fundamentals cards now show persisted company name, simulated reference price, EPS, P/E, market capitalization, dividend yield, source, and update timestamp with responsive layouts.
+- Frontend test suite currently passes 12 tests covering auth UI, routing, stock normalization, logout cleanup, trade readiness, activity filtering/pagination, Watchlist updates/errors, performance ranges, and chart geometry.
+- Backend trade tests cover insufficient cash, insufficient shares, validation, weighted average cost basis, realized/unrealized P/L, idempotency replay/conflict, persisted balance consistency, performance snapshots, and selling the final holding. Maven execution remains unavailable in this environment.
 - `git diff --check` passed during the latest work.
 - Backend Maven tests were not run because `mvn` and `mvnw.cmd` are unavailable in the environment.
 - Docker/PostgreSQL integration was not run because Docker is unavailable.
-- The worktree contains uncommitted changes from the persistence, trading, frontend dashboard, migration, and documentation work. Check `git status` before editing; do not discard unrelated changes.
+- The worktree is clean and the latest project updates are pushed to `main`.
 
 ## Remaining gaps / next recommended work
 
