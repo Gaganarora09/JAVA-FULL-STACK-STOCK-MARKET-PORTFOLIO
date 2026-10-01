@@ -95,6 +95,7 @@ Core details:
 - Frontend coverage now verifies persisted trade activity filtering and client-side pagination.
 - Activity pagination coverage verifies filter changes reset to the first valid page.
 - Performance range coverage verifies the selected range is requested from the persisted `/api/portfolio/performance` endpoint.
+- Chart regression coverage verifies technical and performance line geometry is derived only from supplied persisted points.
 - Frontend coverage now verifies buy/sell readiness from persisted cash, prices, and holding quantities.
 - Frontend coverage now verifies watchlist state refreshes after successful add/remove API operations.
 - Watchlist add now surfaces errors from the follow-up persisted-list refresh instead of silently leaving stale state.

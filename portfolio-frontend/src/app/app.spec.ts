@@ -5,7 +5,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { PortfolioApi, PortfolioPerformancePoint, Trade, WatchlistItem } from './portfolio-api.service';
+import { PortfolioApi, PortfolioPerformancePoint, StockTechnicalAnalysis, Trade, WatchlistItem } from './portfolio-api.service';
 
 describe('App', () => {
   const apiStub = {
@@ -158,6 +158,31 @@ describe('App', () => {
 
     expect(component.performanceRange()).toBe('year');
     expect(performance).toHaveBeenCalledWith('year');
+  });
+
+  it('builds chart geometry only from supplied persisted points', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    const technical: StockTechnicalAnalysis = {
+      ticker: 'AAPL',
+      periodDays: 2,
+      latestClose: 110,
+      sma20: null,
+      rsi14: null,
+      dataSource: 'SIMULATED_DEMO',
+      history: [
+        { date: '2026-10-01', close: 100 },
+        { date: '2026-10-02', close: 110 },
+      ],
+    };
+    component.technicalAnalysis.set(technical);
+    component.performance.set([
+      { date: '2026-10-01', cashBalance: 1000, investedValue: 0, totalValue: 1000, source: 'SIMULATED_DEMO_PRICES' },
+      { date: '2026-10-02', cashBalance: 900, investedValue: 150, totalValue: 1050, source: 'SIMULATED_DEMO_PRICES' },
+    ]);
+
+    expect(component.technicalHistoryLine()).toBe('8,76 392,16');
+    expect(component.performanceLine()).toBe('12,76 388,16');
   });
 
   it('derives trade readiness from persisted cash and holdings', () => {
