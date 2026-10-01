@@ -14,6 +14,7 @@ export interface Stock {
   currentPrice: number;
   priceType: string;
   sector: string;
+  primaryExchange?: string | null;
   priceUpdatedAt: string;
 }
 

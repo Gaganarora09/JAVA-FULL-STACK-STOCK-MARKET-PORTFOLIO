@@ -16,7 +16,7 @@ export class StockDetailPageComponent extends App implements OnInit {
   override ngOnInit(): void {
     super.ngOnInit();
     this.route.paramMap.subscribe((params) => {
-      const ticker = params.get('ticker');
+      const ticker = params.get('ticker')?.trim().toUpperCase();
       if (ticker) {
         this.ticker = ticker;
         this.loadStockAnalysis(ticker);

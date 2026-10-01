@@ -5,7 +5,7 @@
       @for (trade of filteredTrades; track trade.id) {
         <tr>
           <td>{{ trade.executedAt | date:'MMM d, y' }}</td>
-          <td><strong>{{ trade.ticker }}</strong></td>
+          <td><a class="asset-link" [routerLink]="['/stock', trade.ticker]"><strong>{{ trade.ticker }}</strong></a></td>
           <td><span class="trade-type" [class.sell-type]="trade.type === 'SELL'">{{ trade.type }}</span></td>
           <td>{{ trade.quantity }}</td>
           <td>{{ money(trade.priceAtExecution) }}</td>

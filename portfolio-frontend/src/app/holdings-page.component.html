@@ -4,7 +4,7 @@
     <div class="table-scroll"><table><thead><tr><th>ASSET</th><th>SHARES</th><th>PRICE</th><th>VALUE</th><th>UNREALIZED P/L</th></tr></thead><tbody>
       @for (holding of summary()?.holdings ?? []; track holding.ticker) {
         <tr>
-          <td><span class="asset-mark">{{ holding.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ holding.ticker }}</strong><small>{{ holding.companyName }}</small></span></td>
+          <td><span class="asset-mark">{{ holding.ticker.slice(0, 1) }}</span><a class="asset-name asset-link" [routerLink]="['/stock', holding.ticker]"><strong>{{ holding.ticker }}</strong><small>{{ holding.companyName }}</small></a></td>
           <td>{{ holding.quantity }}</td>
           <td>{{ money(holding.currentPrice) }}</td>
           <td class="value-cell">{{ money(holding.marketValue) }}</td>

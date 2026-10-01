@@ -209,7 +209,20 @@ export class App implements OnInit {
   }
 
   get selectedStock(): Stock | undefined {
-    return this.stocks().find((stock) => stock.ticker === this.ticker);
+    const inCatalogue = this.catalogueStocks().find((stock) => stock.ticker === this.ticker);
+    const current = this.stocks().find((stock) => stock.ticker === this.ticker)
+      ?? (inCatalogue && inCatalogue.currentPrice != null
+        ? {
+            ticker: inCatalogue.ticker,
+            companyName: inCatalogue.companyName,
+            currentPrice: inCatalogue.currentPrice,
+            priceType: inCatalogue.priceType,
+            sector: inCatalogue.sector ?? 'Unknown',
+            primaryExchange: inCatalogue.primaryExchange,
+            priceUpdatedAt: inCatalogue.priceUpdatedAt ?? new Date().toISOString(),
+          }
+        : undefined);
+    return current;
   }
 
   get estimatedOrderValue(): number {
@@ -244,11 +257,23 @@ export class App implements OnInit {
   }
 
   get hasRealMarketData(): boolean {
-    return this.stocks().some((stock) => stock.priceType === 'MASSIVE_EOD');
+    return this.stocks().some((stock) => stock.priceType === 'MASSIVE_EOD')
+      || this.catalogueStocks().some((stock) => stock.priceType === 'MASSIVE_EOD');
   }
 
   get marketPriceLabel(): string {
     return this.hasRealMarketData ? 'Real EOD prices' : 'Simulated demo prices';
+  }
+
+  get currentSection(): string {
+    const path = this.router.url.split('?')[0];
+    const section = path.split('/')[1];
+    if (section === 'stock') return 'Stock detail';
+    if (section === 'holdings') return 'Holdings';
+    if (section === 'watchlist') return 'Watchlist';
+    if (section === 'activity') return 'Activity';
+    if (section === 'performance') return 'Performance';
+    return 'Overview';
   }
 
   removeFromWatchlist(item: WatchlistItem): void {
@@ -385,16 +410,20 @@ export class App implements OnInit {
   }
 
   selectStock(ticker: string): void {
-    this.ticker = ticker;
-    this.loadStockAnalysis(ticker);
-    this.router.navigate(['/stock', ticker]);
+    const normalizedTicker = ticker.trim().toUpperCase();
+    if (!normalizedTicker) return;
+    this.ticker = normalizedTicker;
+    this.loadStockAnalysis(normalizedTicker);
+    this.router.navigate(['/stock', normalizedTicker]);
   }
 
   loadStockAnalysis(ticker: string): void {
-    if (!ticker) return;
+    const normalizedTicker = ticker.trim().toUpperCase();
+    if (!normalizedTicker) return;
+    this.ticker = normalizedTicker;
     forkJoin({
-      fundamentals: this.api.fundamentals(ticker),
-      technical: this.api.technicalAnalysis(ticker),
+      fundamentals: this.api.fundamentals(normalizedTicker),
+      technical: this.api.technicalAnalysis(normalizedTicker),
     }).subscribe({
       next: (data) => {
         this.fundamentals.set(data.fundamentals);

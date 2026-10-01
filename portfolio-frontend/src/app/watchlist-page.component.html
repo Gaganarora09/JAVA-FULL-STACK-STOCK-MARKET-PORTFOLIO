@@ -2,7 +2,7 @@
   <div class="section-heading"><div><span class="eyebrow">KEEP AN EYE ON</span><h2>Watchlist</h2></div><span class="count-badge">{{ watchlist().length }}</span></div>
   <div class="watch-items">
     @for (item of watchlist(); track item.ticker) {
-      <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><span class="asset-name"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></span><strong class="watch-price">{{ money(item.currentPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div>
+      <div class="watch-row"><span class="asset-mark small-mark">{{ item.ticker.slice(0, 1) }}</span><a class="asset-name asset-link" [routerLink]="['/stock', item.ticker]"><strong>{{ item.ticker }}</strong><small>{{ item.companyName }}</small></a><strong class="watch-price">{{ money(item.currentPrice) }}</strong><button class="remove-watch" type="button" (click)="removeFromWatchlist(item)" [attr.aria-label]="'Remove ' + item.ticker + ' from watchlist'">×</button></div>
     }
     @if (!watchlist().length) { <div class="empty-state compact"><span class="empty-symbol">☆</span><strong>Your watchlist is empty</strong><p>Add a stock from the catalogue.</p></div> }
   </div>

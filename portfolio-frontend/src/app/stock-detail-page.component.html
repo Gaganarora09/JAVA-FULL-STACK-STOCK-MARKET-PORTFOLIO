@@ -1,5 +1,31 @@
 <section class="card trade-card">
-  <div class="section-heading"><div><span class="eyebrow">STOCK DETAIL</span><h2>{{ ticker || 'Select ticker' }}</h2></div><div class="trade-buttons"><a class="button sell-button" routerLink="/overview">Back to overview</a></div><span class="trade-note">{{ hasRealMarketData ? 'Real EOD market data' : 'Demo values' }}</span></div>
+  <div class="section-heading stock-detail-header">
+    <div>
+      <span class="eyebrow">STOCK DETAIL</span>
+      <h2>{{ ticker || 'Select ticker' }}</h2>
+      <div class="detail-subtitle">{{ selectedStock?.companyName ?? fundamentals()?.companyName ?? 'PortfolioPro stock' }}</div>
+    </div>
+    <div class="detail-actions">
+      <span class="trade-note">{{ hasRealMarketData ? 'Real EOD market data' : 'Demo values' }}</span>
+      <a class="button sell-button" routerLink="/overview">Back to overview</a>
+    </div>
+  </div>
+
+  <div class="detail-summary">
+    <div class="summary-card">
+      <span>Current price</span>
+      <strong>{{ money(selectedStock?.currentPrice ?? technicalAnalysis()?.latestClose) }}</strong>
+    </div>
+    <div class="summary-card">
+      <span>Market</span>
+      <strong>{{ selectedStock?.primaryExchange ?? 'N/A' }}</strong>
+    </div>
+    <div class="summary-card">
+      <span>Sector</span>
+      <strong>{{ selectedStock?.sector ?? 'Unknown' }}</strong>
+    </div>
+  </div>
+
   <div class="market-analysis-grid">
     <article class="card market-fundamentals">
       <div class="section-heading"><div><span class="eyebrow">SIMULATED FUNDAMENTALS</span><h2>{{ fundamentals()?.ticker ?? ticker }} overview</h2></div></div>
