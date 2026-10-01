@@ -5,7 +5,7 @@ import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { App } from './app';
 import { routes } from './app.routes';
-import { PortfolioApi } from './portfolio-api.service';
+import { PortfolioApi, Trade } from './portfolio-api.service';
 
 describe('App', () => {
   const apiStub = {
@@ -92,5 +92,34 @@ describe('App', () => {
     expect(component.technicalAnalysis()).toBeNull();
     expect(component.notice()).toBe('');
     expect(component.error()).toBe('');
+  });
+
+  it('filters and paginates persisted trade activity', () => {
+    const fixture = TestBed.createComponent(App);
+    const component = fixture.componentInstance;
+    const trades: Trade[] = Array.from({ length: 7 }, (_, index) => ({
+      id: index + 1,
+      ticker: 'AAPL',
+      companyName: 'Apple Inc.',
+      type: index < 6 ? 'BUY' : 'SELL',
+      quantity: 1,
+      priceAtExecution: 100 + index,
+      realizedGainLoss: index === 6 ? 5 : 0,
+      executedAt: `2026-10-${String(index + 1).padStart(2, '0')}T00:00:00Z`,
+    }));
+    component.trades.set(trades);
+
+    component.setActivityFilter('BUY');
+
+    expect(component.filteredTrades).toHaveLength(6);
+    expect(component.activityTotalPages).toBe(1);
+    expect(component.filteredTrades.every((trade) => trade.type === 'BUY')).toBe(true);
+
+    component.setActivityFilter('ALL');
+    component.changeActivityPage(1);
+
+    expect(component.activityTotalPages).toBe(2);
+    expect(component.filteredTrades).toHaveLength(1);
+    expect(component.filteredTrades[0].id).toBe(7);
   });
 });
