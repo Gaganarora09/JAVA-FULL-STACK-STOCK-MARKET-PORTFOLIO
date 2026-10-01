@@ -277,6 +277,14 @@ class AuthIntegrationTest {
                 user.getId(), java.time.LocalDate.now(java.time.ZoneOffset.UTC)).orElseThrow();
         assertThat(snapshot.getInvestedValue()).isEqualByComparingTo("750.0000");
 
+        mvc.perform(get("/api/portfolio/performance?range=all")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].cashBalance").value(99650.00))
+                .andExpect(jsonPath("$[0].investedValue").value(750.00))
+                .andExpect(jsonPath("$[0].totalValue").value(100400.00))
+                .andExpect(jsonPath("$[0].source").value("SIMULATED_DEMO_PRICES"));
+
         mvc.perform(get("/api/portfolio/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cashBalance").value(99650.00))
