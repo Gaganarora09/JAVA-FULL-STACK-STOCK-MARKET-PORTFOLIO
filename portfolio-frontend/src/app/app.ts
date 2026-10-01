@@ -41,6 +41,7 @@ export class App implements OnInit {
   readonly catalogueStocks = signal<StockSearchResult[]>([]);
   readonly fundamentals = signal<StockFundamentals | null>(null);
   readonly technicalAnalysis = signal<StockTechnicalAnalysis | null>(null);
+  readonly stockAnalysisLoading = signal(false);
   readonly trades = signal<Trade[]>([]);
   readonly watchlist = signal<WatchlistItem[]>([]);
   readonly profile = signal<UserProfile | null>(null);
@@ -109,6 +110,7 @@ export class App implements OnInit {
     this.watchlist.set([]);
     this.fundamentals.set(null);
     this.technicalAnalysis.set(null);
+    this.stockAnalysisLoading.set(false);
     this.marketDataStatus.set(null);
     this.notice.set('');
     this.error.set('');
@@ -427,6 +429,9 @@ export class App implements OnInit {
     const normalizedTicker = ticker.trim().toUpperCase();
     if (!normalizedTicker) return;
     this.ticker = normalizedTicker;
+    this.fundamentals.set(null);
+    this.technicalAnalysis.set(null);
+    this.stockAnalysisLoading.set(true);
     forkJoin({
       fundamentals: this.api.fundamentals(normalizedTicker),
       technical: this.api.technicalAnalysis(normalizedTicker),
@@ -434,8 +439,12 @@ export class App implements OnInit {
       next: (data) => {
         this.fundamentals.set(data.fundamentals);
         this.technicalAnalysis.set(data.technical);
+        this.stockAnalysisLoading.set(false);
       },
-      error: (failure) => this.error.set(this.messageFor(failure)),
+      error: (failure) => {
+        this.stockAnalysisLoading.set(false);
+        this.error.set(this.messageFor(failure));
+      },
     });
   }
 
